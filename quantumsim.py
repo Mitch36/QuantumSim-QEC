@@ -273,12 +273,36 @@ class CircuitUnitaryOperation:
         combined_operation_fredkin = CircuitUnitaryOperation.get_combined_operation_for_controlled_unitary_operation(combined_operation_swap_a_b)
         return np.dot(np.dot(combined_operation_swap_control_0, combined_operation_fredkin), combined_operation_swap_control_0)
     
+    # @staticmethod
+    # def get_combined_operation_for_toffoli(control, a, b, N):
+    #     combined_operation_swap_control_0 = CircuitUnitaryOperation.get_combined_operation_for_swap(control, 0, N)
+    #     combined_operation_cnot_a_b = CircuitUnitaryOperation.get_combined_operation_for_cnot(a-1, b-1, N-1)
+    #     combined_operation_toffoli = CircuitUnitaryOperation.get_combined_operation_for_controlled_unitary_operation(combined_operation_cnot_a_b)
+    #     return np.dot(np.dot(combined_operation_swap_control_0, combined_operation_toffoli), combined_operation_swap_control_0)
+    
     @staticmethod
-    def get_combined_operation_for_toffoli(control, a, b, N):
-        combined_operation_swap_control_0 = CircuitUnitaryOperation.get_combined_operation_for_swap(control, 0, N)
-        combined_operation_cnot_a_b = CircuitUnitaryOperation.get_combined_operation_for_cnot(a-1, b-1, N-1)
-        combined_operation_toffoli = CircuitUnitaryOperation.get_combined_operation_for_controlled_unitary_operation(combined_operation_cnot_a_b)
-        return np.dot(np.dot(combined_operation_swap_control_0, combined_operation_toffoli), combined_operation_swap_control_0)
+    def get_combined_operation_for_toffoli(control_a, control_b, target, N):
+        identity = QubitUnitaryOperation.get_identity()
+        operation = QubitUnitaryOperation.get_pauli_x()
+        ket_bra_00 = Dirac.ket_bra(2,0,0)
+        ket_bra_11 = Dirac.ket_bra(2,1,1)
+        combined_operation_zero = np.eye(1,1)
+        combined_operation_one = np.eye(1,1)
+        for i in range (0, N):
+            if control_a == i:
+                combined_operation_zero = np.kron(combined_operation_zero, ket_bra_00)
+                combined_operation_one  = np.kron(combined_operation_one, ket_bra_11)
+            elif control_b == i:
+                combined_operation_zero = np.kron(combined_operation_zero, ket_bra_00)
+                combined_operation_one  = np.kron(combined_operation_one, ket_bra_11)
+            elif target == i:
+                combined_operation_zero = np.kron(combined_operation_zero, identity)
+                combined_operation_one  = np.kron(combined_operation_one, operation)
+            else:
+                combined_operation_zero = np.kron(combined_operation_zero, identity)
+                combined_operation_one  = np.kron(combined_operation_one, identity)
+            
+        return combined_operation_zero + combined_operation_one
     
     @staticmethod
     def get_combined_operation_for_unitary_operation_general(operation, target, N):
