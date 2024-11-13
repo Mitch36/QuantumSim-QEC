@@ -272,27 +272,6 @@ class CircuitUnitaryOperation:
         combined_operation_swap_a_b = CircuitUnitaryOperation.get_combined_operation_for_swap(a-1, b-1, N-1)
         combined_operation_fredkin = CircuitUnitaryOperation.get_combined_operation_for_controlled_unitary_operation(combined_operation_swap_a_b)
         return np.dot(np.dot(combined_operation_swap_control_0, combined_operation_fredkin), combined_operation_swap_control_0)
-    
-    # @staticmethod
-    # def get_combined_operation_for_toffoli(control, a, b, N):
-    #     combined_operation_swap_control_0 = CircuitUnitaryOperation.get_combined_operation_for_swap(control, 0, N)
-    #     combined_operation_cnot_a_b = CircuitUnitaryOperation.get_combined_operation_for_cnot(a-1, b-1, N-1)
-    #     combined_operation_toffoli = CircuitUnitaryOperation.get_combined_operation_for_controlled_unitary_operation(combined_operation_cnot_a_b)
-    #     return np.dot(np.dot(combined_operation_swap_control_0, combined_operation_toffoli), combined_operation_swap_control_0)
-    
-    # @staticmethod
-    # def get_combined_operation_for_toffoli(control_a, control_b, target, N):
-    #     if control_a == control_b or control_a == target or control_b == target:
-    #         raise ValueError(f'Toffoli gate not supported for control_a = {control_a}, control_b = {control_b}, and target = {target}')
-    #     if target != 0:
-    #         combined_operation_swap_control_a_0 = CircuitUnitaryOperation.get_combined_operation_for_swap(control_a, 0, N)
-    #         combined_operation_cnot_control_b_target = CircuitUnitaryOperation.get_combined_operation_for_cnot(control_b-1, target-1, N-1)
-    #         combined_operation_toffoli = CircuitUnitaryOperation.get_combined_operation_for_controlled_unitary_operation(combined_operation_cnot_control_b_target)
-    #         return np.dot(np.dot(combined_operation_swap_control_a_0, combined_operation_toffoli), combined_operation_swap_control_a_0)
-    #     else:
-    #         combined_operation_swap_control_a_target = CircuitUnitaryOperation.get_combined_operation_for_swap(control_a, target, N)
-    #         combined_operation_toffoli = CircuitUnitaryOperation.get_combined_operation_for_toffoli(target, control_b, control_a, N)
-    #         return np.dot(np.dot(combined_operation_swap_control_a_target, combined_operation_toffoli), combined_operation_swap_control_a_target)
 
     @staticmethod
     def get_combined_operation_for_toffoli(control_a, control_b, target, N):
@@ -671,18 +650,6 @@ class Circuit:
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
     
-    # def toffoli(self, control_a, control_b, target):
-    #     combined_operation = CircuitUnitaryOperation.get_combined_operation_for_toffoli(control_a, control_b, target, self.N)
-    #     self.descriptions.append(f"Toffoli with control qubit {control_a} and CNOT with control qubit {control_b} and target qubit {target}")
-    #     self.operations.append(combined_operation)
-    #     gate_as_string = '.'*self.N
-    #     gate_as_list = list(gate_as_string)
-    #     gate_as_list[control_a] = '*'
-    #     gate_as_list[control_b] = '*'
-    #     gate_as_list[target] = 'x'
-    #     gate_as_string = ''.join(gate_as_list)
-    #     self.gates.append(gate_as_string)
-    
     def multi_controlled_pauli_z(self):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_multi_controlled_pauli_z_operation(self.N)
         self.descriptions.append(f"Multi-controlled Pauli_Z")
@@ -771,6 +738,13 @@ class Circuit:
     def print_gates(self):
         for gate in self.gates:
             print(gate)
+
+    def print_gates_and_descriptions(self):
+        if(len(self.descriptions) != len(self.gates)):
+            raise Exception("Number of gates is not equal to the number of descriptions")
+        for gate, description in zip(self.gates, self.descriptions):
+            print(gate + "\t" + description)
+            
         
     def execute(self, print_state=False):
         self.state_vector = StateVector(self.N)
