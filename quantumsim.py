@@ -280,29 +280,35 @@ class CircuitUnitaryOperation:
     #     combined_operation_toffoli = CircuitUnitaryOperation.get_combined_operation_for_controlled_unitary_operation(combined_operation_cnot_a_b)
     #     return np.dot(np.dot(combined_operation_swap_control_0, combined_operation_toffoli), combined_operation_swap_control_0)
     
+    # @staticmethod
+    # def get_combined_operation_for_toffoli(control_a, control_b, target, N):
+    #     if control_a == control_b or control_a == target or control_b == target:
+    #         raise ValueError(f'Toffoli gate not supported for control_a = {control_a}, control_b = {control_b}, and target = {target}')
+    #     if target != 0:
+    #         combined_operation_swap_control_a_0 = CircuitUnitaryOperation.get_combined_operation_for_swap(control_a, 0, N)
+    #         combined_operation_cnot_control_b_target = CircuitUnitaryOperation.get_combined_operation_for_cnot(control_b-1, target-1, N-1)
+    #         combined_operation_toffoli = CircuitUnitaryOperation.get_combined_operation_for_controlled_unitary_operation(combined_operation_cnot_control_b_target)
+    #         return np.dot(np.dot(combined_operation_swap_control_a_0, combined_operation_toffoli), combined_operation_swap_control_a_0)
+    #     else:
+    #         combined_operation_swap_control_a_target = CircuitUnitaryOperation.get_combined_operation_for_swap(control_a, target, N)
+    #         combined_operation_toffoli = CircuitUnitaryOperation.get_combined_operation_for_toffoli(target, control_b, control_a, N)
+    #         return np.dot(np.dot(combined_operation_swap_control_a_target, combined_operation_toffoli), combined_operation_swap_control_a_target)
+
     @staticmethod
     def get_combined_operation_for_toffoli(control_a, control_b, target, N):
-        identity = QubitUnitaryOperation.get_identity()
-        operation = QubitUnitaryOperation.get_pauli_x()
-        ket_bra_00 = Dirac.ket_bra(2,0,0)
-        ket_bra_11 = Dirac.ket_bra(2,1,1)
-        combined_operation_zero = np.eye(1,1)
-        combined_operation_one = np.eye(1,1)
-        for i in range (0, N):
-            if control_a == i:
-                combined_operation_zero = np.kron(combined_operation_zero, ket_bra_00)
-                combined_operation_one  = np.kron(combined_operation_one, ket_bra_11)
-            elif control_b == i:
-                combined_operation_zero = np.kron(combined_operation_zero, ket_bra_00)
-                combined_operation_one  = np.kron(combined_operation_one, ket_bra_11)
-            elif target == i:
-                combined_operation_zero = np.kron(combined_operation_zero, identity)
-                combined_operation_one  = np.kron(combined_operation_one, operation)
-            else:
-                combined_operation_zero = np.kron(combined_operation_zero, identity)
-                combined_operation_one  = np.kron(combined_operation_one, identity)
-            
-        return combined_operation_zero + combined_operation_one
+        if control_a == control_b or control_a == target or control_b == target:
+            raise ValueError(f'Toffoli gate not supported for control_a = {control_a}, control_b = {control_b}, and target = {target}')
+        if control_b != 0 and target != 0:
+            combined_operation_swap_control_a_0 = CircuitUnitaryOperation.get_combined_operation_for_swap(control_a, 0, N)
+            combined_operation_cnot_control_b_target = CircuitUnitaryOperation.get_combined_operation_for_cnot(control_b-1, target-1, N-1)
+            combined_operation_toffoli = CircuitUnitaryOperation.get_combined_operation_for_controlled_unitary_operation(combined_operation_cnot_control_b_target)
+            return np.dot(np.dot(combined_operation_swap_control_a_0, combined_operation_toffoli), combined_operation_swap_control_a_0)
+        elif control_b == 0:
+            return CircuitUnitaryOperation.get_combined_operation_for_toffoli(control_b, control_a, target, N)
+        else:
+            combined_operation_swap_control_a_target = CircuitUnitaryOperation.get_combined_operation_for_swap(control_a, target, N)
+            combined_operation_toffoli = CircuitUnitaryOperation.get_combined_operation_for_toffoli(target, control_b, control_a, N)
+            return np.dot(np.dot(combined_operation_swap_control_a_target, combined_operation_toffoli), combined_operation_swap_control_a_target)
     
     @staticmethod
     def get_combined_operation_for_unitary_operation_general(operation, target, N):
@@ -665,6 +671,18 @@ class Circuit:
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
     
+    # def toffoli(self, control_a, control_b, target):
+    #     combined_operation = CircuitUnitaryOperation.get_combined_operation_for_toffoli(control_a, control_b, target, self.N)
+    #     self.descriptions.append(f"Toffoli with control qubit {control_a} and CNOT with control qubit {control_b} and target qubit {target}")
+    #     self.operations.append(combined_operation)
+    #     gate_as_string = '.'*self.N
+    #     gate_as_list = list(gate_as_string)
+    #     gate_as_list[control_a] = '*'
+    #     gate_as_list[control_b] = '*'
+    #     gate_as_list[target] = 'x'
+    #     gate_as_string = ''.join(gate_as_list)
+    #     self.gates.append(gate_as_string)
+    
     def multi_controlled_pauli_z(self):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_multi_controlled_pauli_z_operation(self.N)
         self.descriptions.append(f"Multi-controlled Pauli_Z")
@@ -774,6 +792,7 @@ class Circuit:
         if print_state:
             print("Measured state:")
             print(self.state_vector.get_classical_state_as_string())
+        return self.get_classical_state_as_string()
 
     def get_classical_state_as_string(self):
         return self.state_vector.get_classical_state_as_string()
