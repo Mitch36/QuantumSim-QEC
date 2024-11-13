@@ -737,22 +737,40 @@ class Circuit:
         self.descriptions.pop()
         self.descriptions.append(f"Bit-flip error (Pauli X) on qubit {q}")
 
-    def bitflip_error_random(self):
+    def bitflip_error_random(self, start=0, end=0):
         """ 
         Adds a bitflip error (Pauili X) gate to the circuit effecting one random qubit
         """
-        self.bitflip_error(random.randint(0, (self.N-1)))
-    
+        if(start == 0 and end == 0):
+            self.bitflip_error(random.randint(0, (self.N-1)))
+        elif(start > end):
+            raise ValueError("start qubit can't be greater than end qubit")
+        elif(end > self.N):
+            raise ValueError("End qubit can't be greater than the amount of qubits")
+        elif(start < 0):
+            raise ValueError("Start qubit can't be negative")
+        else:
+            self.bitflip_error(random.randint(start, end))
+
     def phaseflip_error(self, q):
         self.pauli_z(q)
         self.descriptions.pop()
         self.descriptions.append(f"Phase-flip error (Pauli Z) on qubit {q}")
 
-    def phaseflip_error_random(self):
+    def phaseflip_error_random(self, start=0, end=0):
         """
         Adds a phaseflip error (Pauli Z) gate to the circuit effecting one random qubit
         """
-        self.phaseflip_error(random.randint(0, (self.N-1)))
+        if(start == 0 and end == 0):
+            self.phaseflip_error(random.randint(0, (self.N-1)))
+        elif(start > end):
+            raise ValueError("start qubit can't be greater than end qubit")
+        elif(end > self.N):
+            raise ValueError("End qubit can't be greater than the amount of qubits")
+        elif(start < 0):
+            raise ValueError("Start qubit can't be negative")
+        else:
+            self.phaseflip_error(random.randint(start, end))
     
     def print_circuit(self):
         for description in self.descriptions:
