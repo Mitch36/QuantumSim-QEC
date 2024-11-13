@@ -23,6 +23,7 @@ import math
 import cmath
 import matplotlib.colors as mcol
 import matplotlib.animation as animation
+import random
 from collections import Counter
 
 
@@ -730,6 +731,28 @@ class Circuit:
             noisy_circuit.descriptions.append(description)
             noisy_circuit.gates.append(gate)
         return noisy_circuit
+    
+    def bitflip_error(self, q):
+        self.pauli_x(q)
+        self.descriptions.pop()
+        self.descriptions.append(f"Bit-flip error (Pauli X) on qubit {q}")
+
+    def bitflip_error_random(self):
+        """ 
+        Adds a bitflip error (Pauili X) gate to the circuit effecting one random qubit
+        """
+        self.bitflip_error(random.randint(0, (self.N-1)))
+    
+    def phaseflip_error(self, q):
+        self.pauli_z(q)
+        self.descriptions.pop()
+        self.descriptions.append(f"Phase-flip error (Pauli Z) on qubit {q}")
+
+    def phaseflip_error_random(self):
+        """
+        Adds a phaseflip error (Pauli Z) gate to the circuit effecting one random qubit
+        """
+        self.phaseflip_error(random.randint(0, (self.N-1)))
     
     def print_circuit(self):
         for description in self.descriptions:
