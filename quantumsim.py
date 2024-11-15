@@ -811,6 +811,10 @@ class Circuit:
 
     def get_classical_state_as_string(self):
         return self.state_vector.get_classical_state_as_string()
+    
+    def get_classical_state_of_qubit_as_string(self, qubit):
+        string = self.get_classical_state_as_string()
+        return "|" + string[qubit+1] + ">" + "\t Measured value of qubit " + str(qubit) 
 
 '''
 Class representing a noisy quantum circuit of N qubits.
