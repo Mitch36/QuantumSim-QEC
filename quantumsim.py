@@ -785,7 +785,15 @@ class Circuit:
             raise Exception("Number of gates is not equal to the number of descriptions")
         for gate, description in zip(self.gates, self.descriptions):
             print(gate + "\t" + description)
-            
+
+    def toString_gates_and_descriptions(self):
+        returnString = ""
+        if(len(self.descriptions) != len(self.gates)):
+            raise Exception("Number of gates is not equal to the number of descriptions")
+        for gate, description in zip(self.gates, self.descriptions):
+            returnString = returnString.__add__(str(gate + "\t" + description + "\n"))
+
+        return returnString  
         
     def execute(self, print_state=False):
         self.state_vector = StateVector(self.N)
