@@ -26,7 +26,6 @@ class SurfaceCode:
         print("Surface code initliazed with lattice: " + str(self.lattice))
         print("Total qubits used for surface: " + str(self.totalQubits))
 
-        self.circuit = sim.Circuit(self.totalQubits)
         self.qubits = []
 
         previousQubitWasDataQubit = False
