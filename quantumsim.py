@@ -422,8 +422,9 @@ Class representing a quantum circuit of N qubits.
 """
 class Circuit:
     
-    def __init__(self,N):
+    def __init__(self,N, direct_operation_execution_enabled=False):
         self.N = N
+        self.direct_operation_execution_enabled = direct_operation_execution_enabled
         self.state_vector = StateVector(self.N)
         self.quantum_states = [self.state_vector.get_quantum_state()]
         self.descriptions = []
@@ -440,197 +441,204 @@ class Circuit:
     def pauli_x(self, q):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_pauli_x(q, self.N)
         self.descriptions.append(f"Pauli X on qubit {q}")
-        self.operations.append(combined_operation)
         gate_as_string = '.'*self.N
         gate_as_list = list(gate_as_string)
         gate_as_list[q] = 'X'
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
+        self.__direct_execute(combined_operation)  if self.direct_operation_execution_enabled else self.operations.append(combined_operation)
 
     def pauli_y(self, q):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_pauli_y(q, self.N)
         self.descriptions.append(f"Pauli Y on qubit {q}")
-        self.operations.append(combined_operation)
         gate_as_string = '.'*self.N
         gate_as_list = list(gate_as_string)
         gate_as_list[q] = 'Y'
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
+        self.__direct_execute(combined_operation)  if self.direct_operation_execution_enabled else self.operations.append(combined_operation)
 
     def pauli_z(self, q):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_pauli_z(q, self.N)
         self.descriptions.append(f"Pauli Z on qubit {q}")
-        self.operations.append(combined_operation)
         gate_as_string = '.'*self.N
         gate_as_list = list(gate_as_string)
         gate_as_list[q] = 'Z'
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
+        self.__direct_execute(combined_operation)  if self.direct_operation_execution_enabled else self.operations.append(combined_operation)
 
     def hadamard(self, q):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_hadamard(q, self.N)
         self.descriptions.append(f"Hadamard on qubit {q}")
-        self.operations.append(combined_operation)
         gate_as_string = '.'*self.N
         gate_as_list = list(gate_as_string)
         gate_as_list[q] = 'H'
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
+        self.__direct_execute(combined_operation)  if self.direct_operation_execution_enabled else self.operations.append(combined_operation)
 
     def phase(self, theta, q):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_phase(theta, q, self.N)
         self.descriptions.append(f"Phase with theta = {theta/np.pi:.3f} {pi_symbol} on qubit {q}")
-        self.operations.append(combined_operation)
         gate_as_string = '.'*self.N
         gate_as_list = list(gate_as_string)
         gate_as_list[q] = 'S'
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
+        self.__direct_execute(combined_operation)  if self.direct_operation_execution_enabled else self.operations.append(combined_operation)
+
 
     def rotate_x(self, theta, q):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_rotate_x(theta, q, self.N)
         self.descriptions.append(f"Rotate X with theta = {theta/np.pi:.3f} {pi_symbol} on qubit {q}")
-        self.operations.append(combined_operation)
         gate_as_string = '.'*self.N
         gate_as_list = list(gate_as_string)
         gate_as_list[q] = 'R'
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
+        self.__direct_execute(combined_operation)  if self.direct_operation_execution_enabled else self.operations.append(combined_operation)
+
     
     def rotate_y(self, theta, q):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_rotate_y(theta, q, self.N)
         self.descriptions.append(f"Rotate Y with theta = {theta/np.pi:.3f} {pi_symbol} on qubit {q}")
-        self.operations.append(combined_operation)
         gate_as_string = '.'*self.N
         gate_as_list = list(gate_as_string)
         gate_as_list[q] = 'R'
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
+        self.__direct_execute(combined_operation)  if self.direct_operation_execution_enabled else self.operations.append(combined_operation)
+
     
     def rotate_z(self, theta, q):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_rotate_z(theta, q, self.N)
         self.descriptions.append(f"Rotate Z with theta = {theta/np.pi:.3f} {pi_symbol} on qubit {q}")
-        self.operations.append(combined_operation)
         gate_as_string = '.'*self.N
         gate_as_list = list(gate_as_string)
         gate_as_list[q] = 'R'
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
+        self.__direct_execute(combined_operation)  if self.direct_operation_execution_enabled else self.operations.append(combined_operation)
+
 
     def cnot(self, control, target):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_cnot(control, target, self.N)
         self.descriptions.append(f"CNOT with control qubit {control} and target qubit {target}")
-        self.operations.append(combined_operation)
         gate_as_string = '.'*self.N
         gate_as_list = list(gate_as_string)
         gate_as_list[control] = '*'
         gate_as_list[target] = 'X'
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
+        self.__direct_execute(combined_operation)  if self.direct_operation_execution_enabled else self.operations.append(combined_operation)
 
     def controlled_pauli_y(self, control, target):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_controlled_pauli_y(control, target, self.N)
         self.descriptions.append(f"Controlled Pauli Y with control qubit {control} and target qubit {target}")
-        self.operations.append(combined_operation)
         gate_as_string = '.'*self.N
         gate_as_list = list(gate_as_string)
         gate_as_list[control] = '*'
         gate_as_list[target] = 'Y'
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
+        self.__direct_execute(combined_operation)  if self.direct_operation_execution_enabled else self.operations.append(combined_operation)
 
     def controlled_pauli_z(self, control, target):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_controlled_pauli_z(control, target, self.N)
         self.descriptions.append(f"Controlled Pauli Z with control qubit {control} and target qubit {target}")
-        self.operations.append(combined_operation)
         gate_as_string = '.'*self.N
         gate_as_list = list(gate_as_string)
         gate_as_list[control] = '*'
         gate_as_list[target] = 'Z'
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
+        self.__direct_execute(combined_operation)  if self.direct_operation_execution_enabled else self.operations.append(combined_operation)
     
     def controlled_hadamard(self, control, target):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_controlled_hadamard(control, target, self.N)
         self.descriptions.append(f"Controlled Hadamard with control qubit {control} and target qubit {target}")
-        self.operations.append(combined_operation)
         gate_as_string = '.'*self.N
         gate_as_list = list(gate_as_string)
         gate_as_list[control] = '*'
         gate_as_list[target] = 'H'
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
+        self.__direct_execute(combined_operation)  if self.direct_operation_execution_enabled else self.operations.append(combined_operation)
 
     def controlled_phase(self, theta, control, target):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_controlled_phase(theta, control, target, self.N)
         self.descriptions.append(f"Controlled phase with theta = {theta/np.pi:.3f} {pi_symbol}, control qubit {control}, and target qubit {target}")
-        self.operations.append(combined_operation)
         gate_as_string = '.'*self.N
         gate_as_list = list(gate_as_string)
         gate_as_list[control] = '*'
         gate_as_list[target] = 'S'
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
+        self.__direct_execute(combined_operation)  if self.direct_operation_execution_enabled else self.operations.append(combined_operation)
 
     def controlled_rotate_x(self, theta, control, target):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_controlled_rotate_x(theta, control, target, self.N)
         self.descriptions.append(f"Controlled rotate X with theta = {theta/np.pi:.3f} {pi_symbol}, control qubit {control}, and target qubit {target}")
-        self.operations.append(combined_operation)
         gate_as_string = '.'*self.N
         gate_as_list = list(gate_as_string)
         gate_as_list[control] = '*'
         gate_as_list[target] = 'R'
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
+        self.__direct_execute(combined_operation)  if self.direct_operation_execution_enabled else self.operations.append(combined_operation)
+
 
     def controlled_rotate_y(self, theta, control, target):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_controlled_rotate_y(theta, control, target, self.N)
         self.descriptions.append(f"Controlled rotate Y with theta = {theta/np.pi:.3f} {pi_symbol}, control qubit {control}, and target qubit {target}")
-        self.operations.append(combined_operation)
         gate_as_string = '.'*self.N
         gate_as_list = list(gate_as_string)
         gate_as_list[control] = '*'
         gate_as_list[target] = 'R'
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
+        self.__direct_execute(combined_operation)  if self.direct_operation_execution_enabled else self.operations.append(combined_operation)
+
 
     def controlled_rotate_z(self, theta, control, target):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_controlled_rotate_z(theta, control, target, self.N)
         self.descriptions.append(f"Controlled rotate Z with theta = {theta/np.pi:.3f} {pi_symbol}, control qubit {control}, and target qubit {target}")
-        self.operations.append(combined_operation)
         gate_as_string = '.'*self.N
         gate_as_list = list(gate_as_string)
         gate_as_list[control] = '*'
         gate_as_list[target] = 'R'
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
+        self.__direct_execute(combined_operation)  if self.direct_operation_execution_enabled else self.operations.append(combined_operation)
+
 
     def controlled_unitary_operation(self, operation, control, target):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_controlled_unitary_operation_general(operation, control, target, self.N)
         self.descriptions.append(f"Controlled unitary operation with control qubit {control} and target qubit {target}")
-        self.operations.append(combined_operation)
         gate_as_string = '.'*self.N
         gate_as_list = list(gate_as_string)
         gate_as_list[control] = '*'
         gate_as_list[target] = 'U'
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
+        self.__direct_execute(combined_operation)  if self.direct_operation_execution_enabled else self.operations.append(combined_operation)
 
     def swap(self, a, b):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_swap(a, b, self.N)
         self.descriptions.append(f"SWAP on qubit {a} and qubit {b}")
-        self.operations.append(combined_operation)
         gate_as_string = '.'*self.N
         gate_as_list = list(gate_as_string)
         gate_as_list[a] = 'x'
         gate_as_list[b] = 'x'
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
+        self.__direct_execute(combined_operation)  if self.direct_operation_execution_enabled else self.operations.append(combined_operation)
+
         
     def fredkin(self, control, a, b):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_fredkin(control, a, b, self.N)
         self.descriptions.append(f"Fredkin with control qubit {control} and SWAP on qubit {a} and qubit {b}")
-        self.operations.append(combined_operation)
         gate_as_string = '.'*self.N
         gate_as_list = list(gate_as_string)
         gate_as_list[control] = '*'
@@ -638,11 +646,12 @@ class Circuit:
         gate_as_list[b] = 'x'
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
+        self.__direct_execute(combined_operation)  if self.direct_operation_execution_enabled else self.operations.append(combined_operation)
+
     
     def toffoli(self, control_a, control_b, target):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_toffoli(control_a, control_b, target, self.N)
         self.descriptions.append(f"Toffoli with control qubit {control_a} and CNOT with control qubit {control_b} and target qubit {target}")
-        self.operations.append(combined_operation)
         gate_as_string = '.'*self.N
         gate_as_list = list(gate_as_string)
         gate_as_list[control_a] = '*'
@@ -650,23 +659,26 @@ class Circuit:
         gate_as_list[target] = 'x'
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
+        self.__direct_execute(combined_operation)  if self.direct_operation_execution_enabled else self.operations.append(combined_operation)
     
     def multi_controlled_pauli_z(self):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_multi_controlled_pauli_z_operation(self.N)
         self.descriptions.append(f"Multi-controlled Pauli_Z")
-        self.operations.append(combined_operation)
         gate_as_string = '*'*self.N
         self.gates.append(gate_as_string)
+        self.__direct_execute(combined_operation)  if self.direct_operation_execution_enabled else self.operations.append(combined_operation)
+
 
     def multi_controlled_pauli_x(self):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_multi_controlled_pauli_x_operation(self.N)
         self.descriptions.append(f"Multi-controlled Pauli_X")
-        self.operations.append(combined_operation)
         gate_as_string = '*'*self.N
         gate_as_list = list(gate_as_string)
         gate_as_list[self.N-1] = 'X'
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
+        self.__direct_execute(combined_operation)  if self.direct_operation_execution_enabled else self.operations.append(combined_operation)
+
 
     """
     Swap the registers such that the most significant qubit becomes the least significant qubit and vice versa.
@@ -794,8 +806,15 @@ class Circuit:
             returnString = returnString.__add__(str(gate + "\t" + description + "\n"))
 
         return returnString  
+    
+    def __direct_execute(self, operation):
+        self.state_vector.apply_unitary_operation(operation)
+        self.quantum_states.append(self.state_vector.get_quantum_state())
+        return
         
     def execute(self, print_state=False):
+        if(self.direct_operation_execution_enabled):
+            raise Exception("Direct Operation Execution is enabled, execute is unnecessary since operation are directly executed")
         self.state_vector = StateVector(self.N)
         self.quantum_states = [self.state_vector.get_quantum_state()]
         if print_state:
@@ -1004,6 +1023,8 @@ class QuantumUtil:
     """
     @staticmethod
     def run_circuit(circuit:Circuit, nr_runs=1000):
+        if(circuit.direct_operation_execution_enabled):
+            raise Exception("Direct Operation Execution is enabled, QuantumUtil not supported with this flag")
         result = []
         for i in range(nr_runs):
             circuit.execute()
