@@ -422,14 +422,19 @@ Class representing a quantum circuit of N qubits.
 """
 class Circuit:
     
-    def __init__(self,N, direct_operation_execution_enabled=False):
-        self.N = N
-        self.direct_operation_execution_enabled = direct_operation_execution_enabled
+    def __init__(self, numberQuantumBits, numberClassicBits=0,  direct_operation_execution_enabled=False):
+        self.N = numberQuantumBits
+        self.numberClassicBits = numberClassicBits
+        self.classicBitRegister = [numberClassicBits]
+
         self.state_vector = StateVector(self.N)
         self.quantum_states = [self.state_vector.get_quantum_state()]
         self.descriptions = []
         self.operations = []
         self.gates = []
+
+        # Options
+        self.direct_operation_execution_enabled = direct_operation_execution_enabled
 
     def identity(self, q):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_identity(self.N)
