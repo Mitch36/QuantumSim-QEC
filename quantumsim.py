@@ -397,9 +397,10 @@ class StateVector:
         Z = CircuitUnitaryOperation.get_combined_operation_for_pauli_z(q, self.N)
         return np.vdot(self.state_vector, Z.dot(self.state_vector)).real
 
-    def measure(self):
+    def measure(self) -> str:
         probalities = np.square(np.abs(self.state_vector)).flatten()
         self.index = np.random.choice(len(probalities), p=probalities)
+        return self.get_classical_state_as_string()
 
     def noisy_measure(self):
         # For a noisy circuit, the sum of probabilities may not be equal to one
@@ -834,7 +835,7 @@ class Circuit:
                 print("Current quantum state")
                 self.state_vector.print()
 
-    def measure(self, print_state=False):
+    def measure(self, print_state: bool=False) -> str:
         self.state_vector.measure()
         if print_state:
             print("Measured state:")
