@@ -789,10 +789,49 @@ class Circuit:
     def append_circuit(self, circuit):
         if circuit.N != self.N:
             raise ValueError("Function append_circuit: circuit to be appended must have same number of qubits")
-        for operation, description, gate in zip(circuit.operations, circuit.descriptions, circuit.gates):
-            self.operations.append(operation)
-            self.descriptions.append(description)
-            self.gates.append(gate)
+        if(self.save_instructions == True and circuit.save_instructions == True):
+            # Does not work with operations, rather with instructions, copy all instructions
+            for instruction, description, gate in zip(circuit.instructions, circuit.descriptions, circuit.gates):
+                self.instructions.append(instruction)
+                self.descriptions.append(description)
+                self.gates.append(gate)
+        elif(self.save_instructions == False and circuit.save_instructions == False):
+            # Does not work with instructions, rather with operations, copy all instructions
+            for operation, description, gate in zip(circuit.operations, circuit.descriptions, circuit.gates):
+                self.operations.append(operation)
+                self.descriptions.append(description)
+                self.gates.append(gate)
+        else:
+            raise Exception("Save instruction flag must be equal for both circuits")
+
+    """
+    Removes gates on indexes mentioned between the startGateIndex and endGateIndex. 
+    For example: start = 0, end = 1, removes first gate (index [0])
+    start = 1, end = 2, removes second gate (index [1])
+    """    
+    def remove_circuit_part(self, startGateIndex: int, endGateIndex: int):
+        if(startGateIndex < 0):
+            raise Exception("startGateIndex out of bounds")
+        if(endGateIndex > len(self.gates)):
+            raise Exception("endGateIndex out of bounds")
+        if(startGateIndex >= endGateIndex):
+            raise Exception("Start gate index is greater or equal than end gate index")
+        
+        numberOfGatesToRemove = endGateIndex - startGateIndex
+        for i in range(numberOfGatesToRemove):
+            self.remove_circuit_gate(startGateIndex)
+
+    def remove_circuit_gate(self, gateIndex: int):
+        if(gateIndex < 0):
+            raise Exception("gateIndex out of bounds, smaller than zero")
+        if(gateIndex > len(self.gates)):
+            raise Exception("gateIndex out of bounds, greater than qubit register")
+        self.descriptions.pop(gateIndex)
+        self.gates.pop(gateIndex)
+        if(self.save_instructions):
+            self.instructions.pop(gateIndex)
+        else:
+            self.operations.pop(gateIndex)
 
     def append_circuit_general(self, circuit, start):
         if circuit.N > self.N:
