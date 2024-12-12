@@ -426,13 +426,15 @@ class ClassicalBitRegister:
         for i in range(numberClassicBits):
             self.register.insert(-1, 0)
 
-    def insert(self, index: int, value: int):
+    def write(self, index: int, value: int):
         if(index < 0 or index > self.numberClassicBits):
            raise Exception("Index out of bounds") 
+        if(value != 0 and value != 1):
+            raise Exception("Value must be either 0 or 1")
         self.register.pop(index)
         self.register.insert(index, value)
 
-    def read(self, index: int):
+    def read(self, index: int) -> int:
         return self.register[index]
 
     def clear(self):
@@ -885,15 +887,14 @@ class Circuit:
         measurement = copyStateVector.measure()
         # Find the qubit which value should be projected in the bit register
         # Char: '|' should be ignored, therefore '+1'
-        qubitValue = measurement[measureQubit + 1]
-        self.classicalBitRegister.insert(dataBit, qubitValue)
+        qubitValue = int(measurement[measureQubit + 1])
+        self.classicalBitRegister.write(dataBit, qubitValue)
         return qubitValue
     
     def __reset_execute__(self, targetQubit: int, readBit: int):
         if(self.classicalBitRegister.read(readBit) == 1):
-            print("Reset triggered!")
+            print("Reset pauli x applied")
             self.state_vector.apply_unitary_operation(CircuitUnitaryOperation.get_combined_operation_for_pauli_x(targetQubit, self.N))
-        print("Reset not triggered!")
 
     def execute(self, print_state=False):
         self.state_vector = StateVector(self.N)
