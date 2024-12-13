@@ -127,6 +127,19 @@ class SurfaceCode:
         q = rnd.randint(0, 8)
         self.circuit.phaseflip_error(q)
 
+    def add_lower_left(self):
+        self.circuit.cnot(Q.D4(), Q.A5())
+
+        self.circuit.hadamard(Q.A6())
+
+        self.circuit.hadamard(Q.A6())
+
+
+        self.circuit.cnot(Q.D4(), Q.A5())
+        self.circuit.cnot(Q.D4(), Q.A5())
+
+
+
     def add_circuit_a1(self):
         self.circuit.cnot(Q.D1(), Q.A1())
         self.circuit.cnot(Q.D2(), Q.A1())
@@ -135,14 +148,10 @@ class SurfaceCode:
 
     def add_circuit_a2(self):
         self.circuit.hadamard(Q.A2())
-        # self.circuit.cnot(Q.A2(), Q.D1())
-        # self.circuit.cnot(Q.A2(), Q.D2())
-        # self.circuit.cnot(Q.A2(), Q.D4())
-        # self.circuit.cnot(Q.A2(), Q.D5())
-        self.circuit.cnot(Q.A2(), Q.D4())
         self.circuit.cnot(Q.A2(), Q.D1())
-        self.circuit.cnot(Q.A2(), Q.D5())
         self.circuit.cnot(Q.A2(), Q.D2())
+        self.circuit.cnot(Q.A2(), Q.D4())
+        self.circuit.cnot(Q.A2(), Q.D5())
         self.circuit.hadamard(Q.A2())
         self.circuit.measurement(Q.A2(), C.A2())
         self.circuit.reset(Q.A2(), C.A2())
