@@ -34,7 +34,7 @@ class Q():
         return 9
     @staticmethod
     def A2() -> int:
-        return 9
+        return 10
     @staticmethod
     def A3() -> int:
         return 9
@@ -82,7 +82,7 @@ class C():
 
 class SurfaceCode:
     def __init__(self):
-        self.qubits = int(10)
+        self.qubits = int(11)
         self.bits = int(8)
         self.save_instructions_flag = True
 
@@ -127,18 +127,23 @@ class SurfaceCode:
         q = rnd.randint(0, 8)
         self.circuit.phaseflip_error(q)
 
-    def add_lower_left(self):
-        self.circuit.cnot(Q.D4(), Q.A5())
+    def add_upper_right(self):
+        self.circuit.hadamard(Q.A2())
+        self.circuit.cnot(Q.A2(), Q.D4())
+        self.circuit.cnot(Q.A2(), Q.D1())
 
-        self.circuit.hadamard(Q.A6())
+        self.circuit.cnot(Q.D1(), Q.A1())
 
-        self.circuit.hadamard(Q.A6())
+        self.circuit.cnot(Q.A2(), Q.D5())
+        self.circuit.cnot(Q.A2(), Q.D2())
+        self.circuit.hadamard(Q.A2())
 
+        self.circuit.cnot(Q.D2(), Q.A1())
 
-        self.circuit.cnot(Q.D4(), Q.A5())
-        self.circuit.cnot(Q.D4(), Q.A5())
-
-
+        self.circuit.measurement(Q.A1(), C.A1())
+        # self.circuit.reset(Q.A1(), C.A1())
+        self.circuit.measurement(Q.A2(), C.A2())
+        # self.circuit.reset(Q.A2(), C.A2())
 
     def add_circuit_a1(self):
         self.circuit.cnot(Q.D1(), Q.A1())
