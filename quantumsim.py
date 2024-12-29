@@ -401,6 +401,27 @@ class StateVector:
         probalities = np.square(np.abs(self.state_vector)).flatten()
         self.index = np.random.choice(len(probalities), p=probalities)
         return self.get_classical_state_as_string()
+    
+    def measure_qubit(self, q):
+        identity = QubitUnitaryOperation.get_identity()
+        ket_bra_00 = Dirac.ket_bra(2,0,0)
+        ket_bra_11 = Dirac.ket_bra(2,1,1)
+        P0 = np.eye(1,1)
+        P1 = np.eye(1,1)
+        for i in range(self.N):
+            if i == q:
+                P0 = np.kron(P0, ket_bra_00)
+                P1 = np.kron(P1, ket_bra_11)
+            else:
+                P0 = np.kron(P0, identity)
+                P1 = np.kron(P1, identity)
+        prob_0 = np.vdot(self.state_vector, P0.dot(self.state_vector)).real
+        prob_1 = np.vdot(self.state_vector, P1.dot(self.state_vector)).real
+        r = np.random.random()
+        if r <= prob_0:
+            self.state_vector = np.dot(P0,self.state_vector)/np.sqrt(prob_0)
+        else:
+            self.state_vector = np.dot(P1,self.state_vector)/np.sqrt(prob_1)
 
     def noisy_measure(self):
         # For a noisy circuit, the sum of probabilities may not be equal to one
@@ -461,9 +482,9 @@ Class representing a quantum circuit of N qubits.
 """
 class Circuit:
     
-    def __init__(self, numberQuantumBits, numberClassicBits=0,  save_instructions=False):
-        self.N = numberQuantumBits
-        self.classicalBitRegister = ClassicalBitRegister(numberClassicBits)
+    def __init__(self, qubits, bits=0,  save_instructions=False):
+        self.N = qubits
+        self.classicalBitRegister = ClassicalBitRegister(bits)
 
         self.state_vector = StateVector(self.N)
         self.quantum_states = [self.state_vector.get_quantum_state()]
@@ -473,7 +494,7 @@ class Circuit:
 
         self.instructions = []
 
-        # Options
+        # Options / Flags
         self.save_instructions = save_instructions
 
     def identity(self, q):
@@ -725,11 +746,7 @@ class Circuit:
         self.instructions.append(Multi_Controlled_Pauli_X(self.N))   if self.save_instructions else self.operations.append(combined_operation)
 
     """
-    Measurement of a single qubit, Important: ignores entanglement
-    Measurement gates has two side effects: 
-    Wavefunction collapse, the qubit false in the basic states 0 or 1
-    AND
-    Destroys entanglement, which is not supported
+    Measurement of a single qubit
     """
     def measurement(self, measurementQubit: int, copyClassicBit: int) -> int:
         self.descriptions.append(f"Measurement on Qubit {measurementQubit} projected on bit: {copyClassicBit}")
@@ -928,6 +945,10 @@ class Circuit:
         # Char: '|' should be ignored, therefore '+1'
         qubitValue = int(measurement[measureQubit + 1])
         self.classicalBitRegister.write(dataBit, qubitValue)
+        
+        # Collapse the state of the qubit to either |0> or |1>
+        self.state_vector.measure_qubit(measureQubit)
+
         return qubitValue
     
     def __reset_execute__(self, targetQubit: int, readBit: int):
@@ -1176,6 +1197,17 @@ class QuantumUtil:
             result.append(circuit.get_classical_state_as_string())
         return result
 
+    """"
+    Function to run a quantum circuit many times and measure its classical register state many times
+    """
+    @staticmethod
+    def measure_circuit_bit_register(circuit:Circuit, nr_measurements=100):
+        result = []
+        for i in range(nr_measurements):
+            circuit.state_vector = StateVector(circuit.N)
+            circuit.execute()
+            result.append(circuit.classicalBitRegister.toString())
+        return result
 
     """
     Function to plot a histogram of all classical states after executing the circuit multiple times.
