@@ -110,6 +110,11 @@ class C(): # Classical register naming aliases
 This class offers functions for simulating the rotated surface 17 code implementation using QuantumSim
 """
 class SurfaceCode:
+    # Sources used for creating this class:
+    # https://errorcorrectionzoo.org/c/surface-17#citation-3
+    # https://arxiv.org/pdf/2303.17211
+    # http://arxiv.org/pdf/1612.08208
+    
     def __init__(self):
 
         # Simulating many qubits is expensive resource wise, the rotated surface 17 code is simulated using only 10 qubits using QuantumSim.

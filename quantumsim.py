@@ -465,13 +465,18 @@ class ClassicalBitRegister:
     def getAmountOfBits(self):
         return self.numberClassicBits
 
-    def toString(self):
-        output = "["
-        for i in range(self.numberClassicBits):
-            output = output + str(self.register[i])
-            if(i != (self.numberClassicBits - 1)):
-               output = output + ", "
-        output = output + "]"
+    def toString(self, pretify: bool=False):
+        if(pretify):
+            output = "["
+            for i in range(self.numberClassicBits):
+                output = output + str(self.register[i])
+                if(i != (self.numberClassicBits - 1)):
+                    output = output + ", "
+            output = output + "]"
+        else:
+            output = ""
+            for i in range(self.numberClassicBits):
+                output = output + str(self.register[i])
         return output
 
     def print(self):
@@ -939,16 +944,16 @@ class Circuit:
         self.quantum_states.append(self.state_vector.get_quantum_state())
     
     def __measure_execute__(self, measureQubit: int, dataBit: int) -> int:
+        # Collapse the state of the qubit to either |0> or |1>
+        self.state_vector.measure_qubit(measureQubit)
+        
         copyStateVector = self.state_vector
         measurement = copyStateVector.measure()
         # Find the qubit which value should be projected in the bit register
         # Char: '|' should be ignored, therefore '+1'
         qubitValue = int(measurement[measureQubit + 1])
         self.classicalBitRegister.write(dataBit, qubitValue)
-        
-        # Collapse the state of the qubit to either |0> or |1>
-        self.state_vector.measure_qubit(measureQubit)
-
+    
         return qubitValue
     
     def __reset_execute__(self, targetQubit: int, readBit: int):
@@ -1204,7 +1209,6 @@ class QuantumUtil:
     def measure_circuit_bit_register(circuit:Circuit, nr_measurements=100):
         result = []
         for i in range(nr_measurements):
-            circuit.state_vector = StateVector(circuit.N)
             circuit.execute()
             result.append(circuit.classicalBitRegister.toString())
         return result

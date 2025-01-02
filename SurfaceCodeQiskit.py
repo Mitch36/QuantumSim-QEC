@@ -110,6 +110,11 @@ class C(): # Classical register naming aliases
 This class offers functions for simulating the rotated surface 17 code implementation using Qiskit
 """
 class SurfaceCode:
+    # Sources used for creating this class:
+    # https://errorcorrectionzoo.org/c/surface-17#citation-3
+    # https://arxiv.org/pdf/2303.17211
+    # http://arxiv.org/pdf/1612.08208
+
     def __init__(self):
         q_D = QuantumRegister(9, name="Q_D")
         q_X = QuantumRegister(4, name="Q_AncX")
@@ -143,6 +148,10 @@ class SurfaceCode:
         self.qc.barrier()
 
     def add_stabilizer_x_syndrome_extraction(self): # Marked BLUE lines
+
+        # Step 0. (optional) add bit- and phase-flips
+        # self.qc.z(Q.D5())
+        # self.qc.x(Q.D5())
 
         # Step 1. Prepare ancillary stabilizer X qubits, put in Hadamard basis
         self.qc.h(Q.X1())
@@ -221,6 +230,18 @@ class SurfaceCode:
         self.qc.measure(Q.Z2(), C.Z2())
         self.qc.measure(Q.Z3(), C.Z3())
         self.qc.measure(Q.Z4(), C.Z4())
+
+    def measure_all_data_qubits(self):
+        self.qc.measure(Q.D1(), 0)
+        self.qc.measure(Q.D2(), 1)
+        self.qc.measure(Q.D3(), 2)
+        self.qc.measure(Q.D4(), 3)
+        self.qc.measure(Q.D5(), 4)
+        self.qc.measure(Q.D6(), 5)
+        self.qc.measure(Q.D7(), 6)
+        self.qc.measure(Q.D8(), 7)
+        self.qc.measure(Q.D9(), 8)
+
 
 
 
