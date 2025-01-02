@@ -123,7 +123,7 @@ class SurfaceCode:
         c_Z = ClassicalRegister(4, name="C_AncZ")
         c_D = ClassicalRegister(9, name="C_Data")
 
-        self.qc = QuantumCircuit(q_D, q_X, q_Z, c_X, c_Z)
+        self.qc = QuantumCircuit(q_D, q_X, q_Z, c_X, c_Z, c_D)
 
     def add_encoder_circuit(self):
         # Step 1. initialize D2, D4, D6, D8 in Hadamard basis.
@@ -148,10 +148,6 @@ class SurfaceCode:
         self.qc.barrier()
 
     def add_stabilizer_x_syndrome_extraction(self): # Marked BLUE lines
-
-        # Step 0. (optional) add bit- and phase-flips
-        # self.qc.z(Q.D5())
-        # self.qc.x(Q.D5())
 
         # Step 1. Prepare ancillary stabilizer X qubits, put in Hadamard basis
         self.qc.h(Q.X1())
@@ -232,15 +228,48 @@ class SurfaceCode:
         self.qc.measure(Q.Z4(), C.Z4())
 
     def measure_all_data_qubits(self):
-        self.qc.measure(Q.D1(), 0)
-        self.qc.measure(Q.D2(), 1)
-        self.qc.measure(Q.D3(), 2)
-        self.qc.measure(Q.D4(), 3)
-        self.qc.measure(Q.D5(), 4)
-        self.qc.measure(Q.D6(), 5)
-        self.qc.measure(Q.D7(), 6)
-        self.qc.measure(Q.D8(), 7)
-        self.qc.measure(Q.D9(), 8)
+        self.qc.measure(Q.D1(), C.D1())
+        self.qc.measure(Q.D2(), C.D2())
+        self.qc.measure(Q.D3(), C.D3())
+        self.qc.measure(Q.D4(), C.D4())
+        self.qc.measure(Q.D5(), C.D5())
+        self.qc.measure(Q.D6(), C.D6())
+        self.qc.measure(Q.D7(), C.D7())
+        self.qc.measure(Q.D8(), C.D8())
+        self.qc.measure(Q.D9(), C.D9())
+
+    def add_decoder_circuit(self):
+        # Decoding is the opposite of encoding, reverting the encoding steps results in the initiliazed state
+        # Step 1. Dentangle all Bell and Greenberger-Horne-Zeilinger states.
+        self.qc.cx(Q.D3(), Q.D2())
+        self.qc.cx(Q.D7(), Q.D8())
+        self.qc.barrier()
+
+        # Step 2. Dentagle different Bell and Greenberger-Horne-Zeilinger states.
+        self.qc.cx(Q.D2(), Q.D1())
+        self.qc.cx(Q.D6(), Q.D3())
+        self.qc.cx(Q.D6(), Q.D5())
+        self.qc.cx(Q.D4(), Q.D5())
+        self.qc.cx(Q.D4(), Q.D7())
+        self.qc.cx(Q.D8(), Q.D9())
+        self.qc.barrier()
+
+        # Step 3. Put D2, D4, D6, D8 out of the Hadamard basis.
+        self.qc.h(Q.D2())
+        self.qc.h(Q.D4())
+        self.qc.h(Q.D6())
+        self.qc.h(Q.D8())
+        self.qc.barrier()
+
+    def create_bit_flip(self, q: int):
+        self.qc.x(q)
+
+    def create_phase_flip(self, q: int):
+        self.qc.z(q)
+
+
+
+
 
 
 
