@@ -801,6 +801,31 @@ class Circuit:
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
 
+    def recovery_phase_flip(self, startIndexBit: int):
+        """
+        Special function used for doing recoveries when using surface codes
+        """
+        self.descriptions.append(f"Phase flip recovery, syndrome extracted from the first 4 bits starting from {startIndexBit}")
+        self.instructions.append(Recovery_Phase_Flip(startIndexBit, self.N))
+
+        gate_as_string = 'P'*self.N
+        gate_as_list = list(gate_as_string)
+        gate_as_list[0] = 'P'
+        gate_as_string = ''.join(gate_as_list)
+        self.gates.append(gate_as_string)
+
+    def recovery_bit_flip(self, startIndexBit: int):
+        """
+        Special function used for doing recoveries when using surface codes
+        """
+        self.descriptions.append(f"Bit flip recovery, syndrome extracted from the first 4 bits starting from {startIndexBit}")
+        self.instructions.append(Recovery_Bit_Flip(startIndexBit, self.N))
+
+        gate_as_string = 'B'*self.N
+        gate_as_list = list(gate_as_string)
+        gate_as_list[0] = 'B'
+        gate_as_string = ''.join(gate_as_list)
+        self.gates.append(gate_as_string)
     """
     Swap the registers such that the most significant qubit becomes the least significant qubit and vice versa.
     """
@@ -875,7 +900,7 @@ class Circuit:
         if(gateIndex < 0):
             raise Exception("gateIndex out of bounds, smaller than zero")
         if(gateIndex > len(self.gates)):
-            raise Exception("gateIndex out of bounds, greater than qubit register")
+            raise Exception("gateIndex out of bounds, greater than total amount of gates")
         self.descriptions.pop(gateIndex)
         self.gates.pop(gateIndex)
         if(self.save_instructions):
@@ -987,7 +1012,7 @@ class Circuit:
     def __reset_execute__(self, targetQubit: int, readBit: int):
         if(self.classicalBitRegister.read(readBit) == 1):
             self.state_vector.apply_unitary_operation(CircuitUnitaryOperation.get_combined_operation_for_pauli_x(targetQubit, self.N))
-
+                
     def execute(self, print_state=False, create_new_state_vector=True):
         if create_new_state_vector:
             self.state_vector = StateVector(self.N)
@@ -1002,6 +1027,14 @@ class Circuit:
                     self.__measure_execute__(instruction.measureQubit, instruction.dataBit)
                 elif(isinstance(instruction, Reset)):
                     self.__reset_execute__(instruction.targetQubit, instruction.readBit)
+                elif(isinstance(instruction, Recovery_Bit_Flip)):
+                    targetQubit = instruction.getTargetQubit(self.classicalBitRegister)
+                    if(targetQubit is not None):
+                        self.state_vector.apply_unitary_operation(CircuitUnitaryOperation.get_combined_operation_for_pauli_x(targetQubit, self.N))
+                elif(isinstance(instruction, Recovery_Phase_Flip)):
+                    targetQubit = instruction.getTargetQubit(self.classicalBitRegister)
+                    if(targetQubit is not None):
+                        self.state_vector.apply_unitary_operation(CircuitUnitaryOperation.get_combined_operation_for_pauli_z(targetQubit, self.N))
                 else:
                     self.__direct_execute__(instruction.getOperation()) 
         else:
@@ -1731,3 +1764,89 @@ class Reset():
     def __init__(self, targetQubit: int, readBit: int):
         self.readBit = readBit
         self.targetQubit = targetQubit
+
+"""
+Special operation, used for executing a recovery from a phase flip when using surface codes
+"""
+class Recovery_Phase_Flip():
+    """
+    Creates a Recovery instruction for phase flips
+
+    Args:
+        syndromeStartBit: Beginning index bit of the syndrome, standard size of such register is 4
+        totalQubits: Total number of qubits in the circuit
+    """
+    def __init__(self, syndromeStartBit: int, totalQubits: int):
+        self.syndromeStartBit = syndromeStartBit
+        self.totalQubits = totalQubits
+
+    def __get_recovery(self, syndrome: str) -> int:
+        recovery_actions = {
+            '1000': '0', # Phase flip on D1
+            '1010': '1', # Phase flip on D2
+            '0010': '2', # Phase flip on D3 or D6
+            '0100': '3', # Phase flip on D4 or D7
+            '0110': '4', # Phase flip on D5
+            '0101': '7', # Phase flip on D8
+            '0001': '8', # Phase flip on D9
+            '0000': '-1', # No Phase flips detected
+            'Logical Error': '-2'
+        }
+        return recovery_actions.get(syndrome, recovery_actions['Logical Error'])
+
+    def getTargetQubit(self, register: ClassicalBitRegister) -> int:
+        # Deciding the best suitable recovery option based on a classical 4 bits register...
+        syndrome = str(register.read(self.syndromeStartBit)) + str(register.read(self.syndromeStartBit + 1)) + str(register.read(self.syndromeStartBit + 2)) + str(register.read(self.syndromeStartBit + 3))
+        targetQubit = int(self.__get_recovery(syndrome))
+        if(targetQubit == -2):
+            print("Logical error when deciding phase flip recovery option")
+            return None
+        elif(targetQubit == -1):
+            print("No phase flips detected, no recovery applied")
+            return None
+        else:
+            print(f"Phase flip recovery (Pauli Z) applied on qubit: {targetQubit}")
+        return targetQubit
+    
+"""
+Special operation, used for executing a recovery from a bit flip when using surface codes
+"""
+class Recovery_Bit_Flip():
+    """
+    Creates a Recovery instruction for bit flips
+
+    Args:
+        syndromeStartBit: Beginning index bit of the syndrome, standard size of such register is 4
+        totalQubits: Total number of qubits in the circuit
+    """
+    def __init__(self, syndromeStartBit: int, totalQubits: int):
+        self.syndromeStartBit = syndromeStartBit
+        self.totalQubits = totalQubits
+
+    def __get_recovery(self, syndrome: str) -> int:
+        recovery_actions = {
+            '0100': '0', # Bit flip on D1 or D2
+            '0001': '2', # Bit flip on D3
+            '1100': '3', # Bit flip on D4
+            '0110': '4', # Bit flip on D5
+            '0011': '5', # Bit flip on D6
+            '1000': '6', # Bit flip on D7
+            '0010': '7', # Bit flip on D8 or D9
+            '0000': '-1', # No Bit flips detected
+            'Logical Error': '-2'
+        }
+        return recovery_actions.get(syndrome, recovery_actions['Logical Error'])
+
+    def getTargetQubit(self, register: ClassicalBitRegister) -> int:
+        # Deciding the best suitable recovery option based on a classical 4 bits register...
+        syndrome = str(register.read(self.syndromeStartBit)) + str(register.read(self.syndromeStartBit + 1)) + str(register.read(self.syndromeStartBit + 2)) + str(register.read(self.syndromeStartBit + 3))
+        targetQubit = int(self.__get_recovery(syndrome))
+        if(targetQubit == -2):
+            print("Logical error when deciding bit flip recovery option")
+            return None
+        elif(targetQubit == -1):
+            print("No bit flips detected, no recovery applied")
+            return None
+        else:
+            print(f"Bit flip recovery (Pauli X) applied on qubit: {targetQubit}")
+        return targetQubit

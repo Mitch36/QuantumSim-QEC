@@ -257,13 +257,17 @@ class SurfaceCode:
             raise Exception("q: qubit parameter must be within boundaries 0(D1) and 8(D9)")
         self.circuit.pauli_z(q)
 
-    
-    def apply_recovery_from_z_stabilizer(self, ):
+    def add_recovery_from_syndrome_x_stabilizer(self):
         """
         Calculates an appropriate recovery action based on the stabilizer Z syndrome measurement
         """
+        self.circuit.recovery_phase_flip(0)
 
-        pass
+    def add_recovery_from_syndrome_z_stabilizer(self):
+        """
+        Calculates an appropriate recovery action based on the stabilizer Z syndrome measurement
+        """
+        self.circuit.recovery_bit_flip(4)
 
     def add_measure_all_data_qubits(self):
         self.circuit.measurement(Q.D1(), C.D1())
