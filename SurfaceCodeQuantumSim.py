@@ -197,7 +197,7 @@ class SurfaceCode:
         self.circuit.cnot(Q.X3(), Q.D3())
         self.circuit.hadamard(Q.X3())
         self.circuit.measurement(Q.X3(), C.X3())
-        self.circuit.reset(Q.X3(), Q.X3())
+        self.circuit.reset(Q.X3(), C.X3())
 
     def __add_x4_syndrome_extraction(self):
         self.circuit.hadamard(Q.X4())
@@ -256,6 +256,14 @@ class SurfaceCode:
         if(q < 0 or q > 8):
             raise Exception("q: qubit parameter must be within boundaries 0(D1) and 8(D9)")
         self.circuit.pauli_z(q)
+
+    
+    def apply_recovery_from_z_stabilizer(self, ):
+        """
+        Calculates an appropriate recovery action based on the stabilizer Z syndrome measurement
+        """
+
+        pass
 
     def add_measure_all_data_qubits(self):
         self.circuit.measurement(Q.D1(), C.D1())

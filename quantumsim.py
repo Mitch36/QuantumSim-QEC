@@ -39,7 +39,7 @@ from qutip import Bloch
 '''
 Set the default font family to Courier to ensure a monospaced font for labels of axes in 
 '''
-matplotlib.rcParams['font.family'] = 'Courier'
+matplotlib.rcParams['font.family'] = 'Arial'
 
 '''
 Symbol for pi
