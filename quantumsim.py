@@ -439,13 +439,43 @@ class StateVector:
         for i, val in enumerate(self.state_vector):
             print(f"{Dirac.state_as_string(i,self.N)} : {val[0]}")
 
+class RegisterPartition:
+    """
+    This object is used splice up the classical bit register, 
+    its purpose is pretifying ClassicalBitRegisters output when working with many classical bits
+    """
+    def __init__(self, begin: int, end: int, name: str):
+        self.begin = begin
+        self.end = end
+        self.name = name
+
+    def toString(self) -> str:
+        return "Partition: " + self.name + ", starting from: " + str(self.begin) + " to: " + str(self.end) + ""
+
 class ClassicalBitRegister:
 
     def __init__(self, numberClassicBits: int):
         self.numberClassicBits = numberClassicBits
+        self.partitions = []
         self.register = []
         for i in range(numberClassicBits):
             self.register.insert(-1, 0)
+
+    def create_partition(self, begin: int, end: int, name: str):
+        if(begin > end):
+            raise Exception("Begin must be smaller than end")
+        if(end > self.numberClassicBits):
+            raise Exception("Can not partition beyond the register limits")
+        for existingPartition in self.partitions:
+            # Check if the new partition is within boundaries of a different one
+            if(existingPartition.begin >= begin and begin <= existingPartition.end):
+                raise Exception("Begin parameter is within boundaries of a different partition")
+            if(existingPartition.begin >= end and end <= existingPartition.end):
+                raise Exception("End parameter is within boundaries of a different partition")
+            # existing 0 3 new is 4 7
+            if(begin < existingPartition.begin and end > existingPartition.end):
+                raise Exception("Begin and End parameters are overlapping with a different partition")
+        self.partitions.append(RegisterPartition(begin, end, name))
 
     def write(self, index: int, value: int):
         if(index < 0 or index > self.numberClassicBits):
@@ -465,18 +495,16 @@ class ClassicalBitRegister:
     def getAmountOfBits(self):
         return self.numberClassicBits
 
-    def toString(self, pretify: bool=False):
-        if(pretify):
-            output = "["
-            for i in range(self.numberClassicBits):
-                output = output + str(self.register[i])
-                if(i != (self.numberClassicBits - 1)):
-                    output = output + ", "
-            output = output + "]"
-        else:
-            output = ""
-            for i in range(self.numberClassicBits):
-                output = output + str(self.register[i])
+    def toString(self):
+        
+        output = ""
+        for i in range(self.numberClassicBits):
+            # Check first if the index is a beginning of a partition
+            for partition in self.partitions:
+                if(partition.begin == i):
+                    output = output + " " + partition.name + ":"
+                    break
+            output = output + str(self.register[i])
         return output
 
     def print(self):
@@ -958,11 +986,11 @@ class Circuit:
     
     def __reset_execute__(self, targetQubit: int, readBit: int):
         if(self.classicalBitRegister.read(readBit) == 1):
-            print("Reset pauli x applied")
             self.state_vector.apply_unitary_operation(CircuitUnitaryOperation.get_combined_operation_for_pauli_x(targetQubit, self.N))
 
-    def execute(self, print_state=False):
-        self.state_vector = StateVector(self.N)
+    def execute(self, print_state=False, create_new_state_vector=True):
+        if create_new_state_vector:
+            self.state_vector = StateVector(self.N)
         self.quantum_states = [self.state_vector.get_quantum_state()]
         if print_state:
             print("Initial quantum state")

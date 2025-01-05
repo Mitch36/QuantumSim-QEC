@@ -117,7 +117,7 @@ class SurfaceCode:
     
     def __init__(self):
 
-        # Simulating many qubits is expensive resource wise, the rotated surface 17 code is simulated using only 10 qubits using QuantumSim.
+        # Simulating many qubits is expensive resource wise, the rotated surface 17 code is therefore simulated using only 10 qubits using QuantumSim.
         self.qubits = int(10)
         # All 17 simulated qubits are eventually measured, therefore 17 classical bits are required.
         self.bits = int(17)
@@ -125,7 +125,148 @@ class SurfaceCode:
         self.save_instructions_flag = True
 
         self.circuit = Circuit(self.qubits, self.bits, self.save_instructions_flag)
+        self.circuit.classicalBitRegister.create_partition(0, 3, "AncX")
+        self.circuit.classicalBitRegister.create_partition(4, 7, "AncZ")
+        self.circuit.classicalBitRegister.create_partition(8, 16, "Data")
 
+    def build_circuit(self):
+        pass
+
+    def add_encoder_circuit(self):
+        # Step 1. initialize D2, D4, D6, D8 in Hadamard basis.
+        self.circuit.hadamard(Q.D2())
+        self.circuit.hadamard(Q.D4())
+        self.circuit.hadamard(Q.D6())
+        self.circuit.hadamard(Q.D8())
+
+        # Step 2. Make four different Bell and Greenberger-Horne-Zeilinger states.
+        self.circuit.cnot(Q.D2(), Q.D1())
+        self.circuit.cnot(Q.D6(), Q.D3())
+        self.circuit.cnot(Q.D6(), Q.D5())
+        self.circuit.cnot(Q.D4(), Q.D5())
+        self.circuit.cnot(Q.D4(), Q.D7())
+        self.circuit.cnot(Q.D8(), Q.D9())
+
+        # Step 3. Entangle all Bell and Greenberger-Horne-Zeilinger states.
+        self.circuit.cnot(Q.D3(), Q.D2())
+        self.circuit.cnot(Q.D7(), Q.D8())
+
+    def add_decoder_circuit(self):
+        # Decoding is the opposite of encoding, reverting the encoding steps results in the initiliazed state
+        # Step 1. Dentangle all Bell and Greenberger-Horne-Zeilinger states.
+        self.circuit.cnot(Q.D3(), Q.D2())
+        self.circuit.cnot(Q.D7(), Q.D8())
+
+        # Step 2. Dentagle different Bell and Greenberger-Horne-Zeilinger states.
+        self.circuit.cnot(Q.D2(), Q.D1())
+        self.circuit.cnot(Q.D6(), Q.D3())
+        self.circuit.cnot(Q.D6(), Q.D5())
+        self.circuit.cnot(Q.D4(), Q.D5())
+        self.circuit.cnot(Q.D4(), Q.D7())
+        self.circuit.cnot(Q.D8(), Q.D9())
+
+        # Step 3. Put D2, D4, D6, D8 out of the Hadamard basis.
+        self.circuit.hadamard(Q.D2())
+        self.circuit.hadamard(Q.D4())
+        self.circuit.hadamard(Q.D6())
+        self.circuit.hadamard(Q.D8())
+
+    def __add_x1_syndrome_extraction(self):
+        self.circuit.hadamard(Q.X1())
+        self.circuit.cnot(Q.X1(), Q.D1())
+        self.circuit.cnot(Q.X1(), Q.D2())
+        self.circuit.hadamard(Q.X1())
+        self.circuit.measurement(Q.X1(), C.X1())
+        self.circuit.reset(Q.X1(), C.X1())
+
+    def __add_x2_syndrome_extraction(self):
+        self.circuit.hadamard(Q.X2())
+        self.circuit.cnot(Q.X2(), Q.D7())
+        self.circuit.cnot(Q.X2(), Q.D4())
+        self.circuit.cnot(Q.X2(), Q.D8())
+        self.circuit.cnot(Q.X2(), Q.D5())
+        self.circuit.hadamard(Q.X2())
+        self.circuit.measurement(Q.X2(), C.X2())
+        self.circuit.reset(Q.X2(), C.X2())
+
+    def __add_x3_syndrome_extraction(self):
+        self.circuit.hadamard(Q.X3())
+        self.circuit.cnot(Q.X3(), Q.D5())
+        self.circuit.cnot(Q.X3(), Q.D2())
+        self.circuit.cnot(Q.X3(), Q.D6())
+        self.circuit.cnot(Q.X3(), Q.D3())
+        self.circuit.hadamard(Q.X3())
+        self.circuit.measurement(Q.X3(), C.X3())
+        self.circuit.reset(Q.X3(), Q.X3())
+
+    def __add_x4_syndrome_extraction(self):
+        self.circuit.hadamard(Q.X4())
+        self.circuit.cnot(Q.X4(), Q.D8())
+        self.circuit.cnot(Q.X4(), Q.D9())
+        self.circuit.hadamard(Q.X4())
+        self.circuit.measurement(Q.X4(), C.X4())
+        self.circuit.reset(Q.X4(), C.X4())
+
+    def add_x_stabilizer_syndrome_extraction(self):
+        self.__add_x1_syndrome_extraction()
+        self.__add_x2_syndrome_extraction()
+        self.__add_x3_syndrome_extraction()
+        self.__add_x4_syndrome_extraction()
+
+    def __add_z1_syndrome_extraction(self):
+        self.circuit.cnot(Q.D7(), Q.Z1())
+        self.circuit.cnot(Q.D4(), Q.Z1())
+        self.circuit.measurement(Q.Z1(), C.Z1())
+        self.circuit.reset(Q.Z1(), C.Z1())
+
+    def __add_z2_syndrome_extraction(self):
+        self.circuit.cnot(Q.D4(), Q.Z2())
+        self.circuit.cnot(Q.D5(), Q.Z2())
+        self.circuit.cnot(Q.D1(), Q.Z2())
+        self.circuit.cnot(Q.D2(), Q.Z2())
+        self.circuit.measurement(Q.Z2(), C.Z2())
+        self.circuit.reset(Q.Z2(), C.Z2())
+
+    def __add_z3_syndrome_extraction(self):
+        self.circuit.cnot(Q.D8(), Q.Z3())
+        self.circuit.cnot(Q.D9(), Q.Z3())
+        self.circuit.cnot(Q.D5(), Q.Z3())
+        self.circuit.cnot(Q.D6(), Q.Z3())
+        self.circuit.measurement(Q.Z3(), C.Z3())
+        self.circuit.reset(Q.Z3(), C.Z3())
+
+    def __add_z4_syndrome_extraction(self):
+        self.circuit.cnot(Q.D6(), Q.Z4())
+        self.circuit.cnot(Q.D3(), Q.Z4())
+        self.circuit.measurement(Q.Z4(), C.Z4())
+        self.circuit.reset(Q.Z4(), Q.Z4())
+
+    def add_z_stabilizer_syndrome_extraction(self):
+        self.__add_z1_syndrome_extraction()
+        self.__add_z2_syndrome_extraction()
+        self.__add_z3_syndrome_extraction()
+        self.__add_z4_syndrome_extraction()
+
+    def add_bit_flip(self, q: int):
+        if(q < 0 or q > 8):
+            raise Exception("q: qubit parameter must be within boundaries 0(D1) and 8(D9)")
+        self.circuit.pauli_x(q)
+
+    def add_phase_flip(self, q: int):
+        if(q < 0 or q > 8):
+            raise Exception("q: qubit parameter must be within boundaries 0(D1) and 8(D9)")
+        self.circuit.pauli_z(q)
+
+    def add_measure_all_data_qubits(self):
+        self.circuit.measurement(Q.D1(), C.D1())
+        self.circuit.measurement(Q.D2(), C.D2())
+        self.circuit.measurement(Q.D3(), C.D3())
+        self.circuit.measurement(Q.D4(), C.D4())
+        self.circuit.measurement(Q.D5(), C.D5())
+        self.circuit.measurement(Q.D6(), C.D6())
+        self.circuit.measurement(Q.D7(), C.D7())
+        self.circuit.measurement(Q.D8(), C.D8())
+        self.circuit.measurement(Q.D9(), C.D9())
 
 
 
