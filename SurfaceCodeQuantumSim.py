@@ -239,7 +239,7 @@ class SurfaceCode:
         self.circuit.cnot(Q.D6(), Q.Z4())
         self.circuit.cnot(Q.D3(), Q.Z4())
         self.circuit.measurement(Q.Z4(), C.Z4())
-        self.circuit.reset(Q.Z4(), Q.Z4())
+        self.circuit.reset(Q.Z4(), C.Z4())
 
     def add_z_stabilizer_syndrome_extraction(self):
         self.__add_z1_syndrome_extraction()
