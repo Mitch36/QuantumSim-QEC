@@ -1321,6 +1321,48 @@ class Circuit:
         self.gates.append(gate_as_string)
         self.instructions.append(CNOT(self.N, target, control))  if self.save_instructions else self.operations.append(combined_operation)
 
+    # Define the new cnot gate with integrated noise 
+    def noisy_cnot(self, c_qubit: int, t_qubit: int, c_p: float= None, t_p: float= None, c_T1: float= None, t_T1: float= None, c_T2: float= None, t_T2: float= None, gate_error: float=None):
+        """Adds a noisy cnot gate to the circuit with depolarizing and
+        relaxation errors on both qubits during the unitary evolution.
+
+        Args:
+            c_qubit (int): Control qubit for the gate.
+            t_qubit (int): Target qubit for the gate.
+            c_p (float): Depolarizing error probability for the control qubit.
+            t_p (float): Depolarizing error probability for the target qubit.
+            c_T1 (float): Amplitude damping time in ns for the control qubit.
+            t_T1 (float): Amplitude damping time in ns for the target qubit.
+            c_T2 (float): Dephasing time in ns for the contorl qubit.
+            t_T2 (float): Dephasing time in ns for the target qubit.
+            gate_error (float): CNOT depolarizing error probability.
+        """
+
+        # If any noise parameter is None use the generated value
+        if c_p is None:
+            c_p = self.parameters["p"][c_qubit]
+        if c_T1 is None:
+            c_T1 = self.parameters["T1"][c_qubit]
+        if c_T2 is None:
+            c_T2 = self.parameters["T2"][c_qubit]
+        if t_p is None:
+            t_p = self.parameters["p"][t_qubit]
+        if t_T1 is None:
+            t_T1 = self.parameters["T1"][t_qubit]
+        if t_T2 is None:
+            t_T2 = self.parameters["T2"][t_qubit]
+        if gate_error is None:
+            gate_error = 0.1 # default was set to 1
+
+        self.instructions.append(NoisyCNOT(c_qubit, t_qubit, self.N, c_p, t_p, c_T1, t_T1, c_T2, t_T2, gate_error))
+        self.descriptions.append(f"Noisy CNOT with target qubit {t_qubit} and control qubit {c_qubit}")
+        gate_as_string = '.'*self.N
+        gate_as_list = list(gate_as_string)
+        gate_as_list[c_qubit] = '*'
+        gate_as_list[t_qubit] = 'x'
+        gate_as_string = ''.join(gate_as_list)
+        self.gates.append(gate_as_string) 
+
     def controlled_pauli_y(self, control, target):
         combined_operation = CircuitUnitaryOperation.get_combined_operation_for_controlled_pauli_y(control, target, self.N)
         self.descriptions.append(f"Controlled Pauli Y with control qubit {control} and target qubit {target}")
@@ -1714,7 +1756,6 @@ class Circuit:
             self.state_vector.apply_unitary_operation(CircuitUnitaryOperation.get_combined_operation_for_hadamard(instruction.q, instruction.N))
             self.state_vector.apply_noisy_operation(instruction.getNoisyOperation())
             self.state_vector.apply_unitary_operation(CircuitUnitaryOperation.get_combined_operation_for_hadamard(instruction.q, instruction.N))
-
         elif isinstance(instruction, NoisyHadamard):
             # First execute a virtual Rz gate
             self.virtual_rotate_z(instruction.q, np.pi / 2)
@@ -1726,6 +1767,10 @@ class Circuit:
 
             # To complete the gate end with a virtual Rz gate
             self.virtual_rotate_z(instruction.q, np.pi / 2)
+        elif isinstance(instruction, NoisyCNOT):
+            instruction.setPhiControl(self.phi[instruction.c_qubit])
+            instruction.setPhiTarget(self.phi[instruction.t_qubit])
+            self.state_vector.apply_noisy_operation(instruction.getNoisyOperation())
     
     def __direct_execute__(self, operation: CircuitUnitaryOperation):
         self.state_vector.apply_unitary_operation(operation)
@@ -2806,6 +2851,8 @@ class NoisyGate:
               Array representing a CNOT two-qubit noisy quantum gate.
         """
 
+        #TODO hardcode that the value with np.sqrt can never be zero to prevent exceptions
+
         """ 0) CONSTANTS """
         tg = 35*10**(-9)
         t_cr = t_cnot/2-tg
@@ -3276,4 +3323,54 @@ class NoisyHadamard(NoisyGateInstruction):
         
     def getNoisyOperation(self) -> CircuitUnitaryOperation:
         return CircuitUnitaryOperation.get_combined_operation_for_qubit(NoisyGate.construct(self.theta, self.phi, self.p, self.T1, self.T2),self.q, self.N)
+    
+class NoisyCNOT(NoisyGateInstruction):
+    def __init__(self, c_qubit: int, t_qubit: int, N: int, c_p: float= None, t_p: float= None, c_T1: float= None, t_T1: float= None, c_T2: float= None, t_T2: float= None, gate_error: float=None):
+        self.c_qubit = c_qubit
+        self.t_qubit = t_qubit
+        self.N = N
+        self.c_p = c_p
+        self.t_p = t_p
+        self.c_T1 = c_T1
+        self.t_T1 = t_T1
+        self.c_T2 = c_T2
+        self.t_T2 = t_T2
+        self.gate_error = gate_error
+        
+    def setPhiControl(self, phi: float):
+        self.c_phi = phi
 
+    def setPhiTarget(self, phi: float):
+        self.t_phi = phi
+
+    def getNoisyOperation(self) -> CircuitUnitaryOperation:
+        gate_length = 5.61777778e-07
+
+        # Create an identity matrix for the remaining qubits
+        identity_matrix = np.eye(2**(self.N - 2))
+
+        # Create cnot matrix
+        if self.c_qubit < self.t_qubit:
+            cnot_operation = NoisyGate.construct_cnot(self.c_phi, self.t_phi, gate_length, self.gate_error, self.c_p, self.t_p, self.c_T1, self.c_T2, self.t_T1, self.t_T2)
+            self.c_phi = self.c_phi - np.pi/2
+        else:
+            cnot_operation = NoisyGate.construct_cnot_inverse(self.c_phi, self.t_phi, gate_length, self.gate_error, self.c_p, self.t_p, self.c_T1, self.c_T2, self.t_T1, self.t_T2)
+            self.c_phi = self.c_phi + np.pi/2 + np.pi
+            self.t_phi = self.t_phi + np.pi/2
+        
+        # Perform the Kronecker product to expand the CNOT operation
+        cnot_operation = np.kron(cnot_operation, identity_matrix)
+
+        # Create swap matrices
+        if self.c_qubit < self.t_qubit:
+            # control qubit should swap with qubit 0
+            swap_control = CircuitUnitaryOperation.get_combined_operation_for_swap(0, self.c_qubit, self.N) if self.c_qubit != 0 else np.eye(2**self.N)
+            swap_target = CircuitUnitaryOperation.get_combined_operation_for_swap(1, self.t_qubit, self.N) if self.t_qubit != 1 else np.eye(2**self.N)
+        else:
+            # target qubit should swap with qubit 0
+            swap_target = CircuitUnitaryOperation.get_combined_operation_for_swap(0, self.t_qubit, self.N) if self.t_qubit != 0 else np.eye(2**self.N)
+            swap_control = CircuitUnitaryOperation.get_combined_operation_for_swap(1, self.c_qubit, self.N) if self.c_qubit != 1 else np.eye(2**self.N)
+
+        # Construct the full CNOT operation with swaps
+        operation = swap_control @ swap_target @ cnot_operation @ swap_target.T.conj() @ swap_control.T.conj() 
+        return operation
