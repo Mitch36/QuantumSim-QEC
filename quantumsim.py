@@ -2635,7 +2635,11 @@ class NoisyGate:
         a = t_cr / tg
         assert t_cr > 0, f"Expected t_cr to be > 0 but found {t_cr}"
         assert tg > 0, f"Expected tg to be > 0 but found {tg}"
-        ed_cr = np.sqrt(p/(4*a))
+        temp = p/(4*a)
+        if (temp < 0):
+            # print(f"ed_cr is negative, convert to 0.000001, actual: {temp}")
+            temp = 0.000001
+        ed_cr = np.sqrt(temp)
 
         if c_T1 == 0:
             e1_ctr = 0
@@ -2862,7 +2866,7 @@ class NoisyGate:
         first_cr = NoisyGate.__get_cr_gate_contribution(-np.pi/4, -t_phi, t_cr, p_cr, c_T1, c_T2, t_T1, t_T2)
         second_cr = NoisyGate.__get_cr_gate_contribution(np.pi/4, -t_phi, t_cr, p_cr, c_T1, c_T2, t_T1, t_T2)
 
-        """ 2) X/Sqrt(X) contributions """
+        """ 2) X/Sqrt(X) contributions """ 
         x_gate = NoisyGate.construct(np.pi, -c_phi+np.pi/2, c_p, c_T1, c_T2)
         sx_gate = NoisyGate.construct(np.pi / 2, -t_phi, t_p, t_T1, t_T2)
         Y_Rz = NoisyGate.construct(-np.pi, -c_phi + np.pi/2 + np.pi/2, c_p, c_T1, c_T2)
