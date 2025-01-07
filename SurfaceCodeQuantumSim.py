@@ -106,6 +106,15 @@ class C(): # Classical register naming aliases
     def D9() -> int:
         return 16
 
+class SurfaceCodePart:
+    def __init__(self, name: str, startIndexGate: int, totalGates: int):
+        self.name = name
+        self.startIndexGate = startIndexGate
+        self.totalGates = totalGates
+
+    def toString(self) -> str:
+        return self.name + ", starting from index: " + str(self.startIndexGate) + ", total gates: " + str(self.totalGates) + "\n"
+
 """
 This class offers functions for simulating the rotated surface 17 code implementation using QuantumSim
 """
@@ -129,10 +138,28 @@ class SurfaceCode:
         self.circuit.classicalBitRegister.create_partition(4, 7, "AncZ")
         self.circuit.classicalBitRegister.create_partition(8, 16, "Data")
 
-    def build_circuit(self):
-        pass
+        # Keeps track of the circuit parts added to the SurfaceCode class
+        self.parts = []
+
+    def has(self, name) -> bool:
+        for part in self.parts:
+            if(part.name == name):
+                return True
+        return False
+    
+    def toString(self) -> str:
+        output = "Surface code circuitry consists of: \n"
+        for part in self.parts:
+            output += part.toString()
+        output += "Total gates in SurfaceCode object: " + str(self.circuit.gates.__len__())
+        return output
 
     def add_encoder_circuit(self):
+        if(self.has("Encoder")):
+            raise Exception("SurfaceCode already has an encoder circuit")
+        
+        self.parts.append(SurfaceCodePart("Encoder", self.circuit.gates.__len__(), 12))
+
         # Step 1. initialize D2, D4, D6, D8 in Hadamard basis.
         self.circuit.hadamard(Q.D2())
         self.circuit.hadamard(Q.D4())
@@ -151,7 +178,21 @@ class SurfaceCode:
         self.circuit.cnot(Q.D3(), Q.D2())
         self.circuit.cnot(Q.D7(), Q.D8())
 
+    def remove_encoder_circuit(self):
+        for part in self.parts:
+            if part.name == "Encoder":
+                self.circuit.remove_circuit_part(part.startIndexGate, (part.startIndexGate + part.totalGates))
+                self.parts.remove(part)
+                return
+        raise Exception("No encoder exists in SurfaceCode object")
+
     def add_decoder_circuit(self):
+
+        if(self.has("Decoder")):
+            raise Exception("SurfaceCode already has an decoder circuit")
+        
+        self.parts.append(SurfaceCodePart("Decoder", self.circuit.gates.__len__(), 12))
+
         # Decoding is the opposite of encoding, reverting the encoding steps results in the initiliazed state
         # Step 1. Dentangle all Bell and Greenberger-Horne-Zeilinger states.
         self.circuit.cnot(Q.D3(), Q.D2())
@@ -170,6 +211,14 @@ class SurfaceCode:
         self.circuit.hadamard(Q.D4())
         self.circuit.hadamard(Q.D6())
         self.circuit.hadamard(Q.D8())
+
+    def remove_decoder_circuit(self):
+        for part in self.parts:
+            if part.name == "Decoder":
+                self.circuit.remove_circuit_part(part.startIndexGate, (part.startIndexGate + part.totalGates))
+                self.parts.remove(part)
+                return
+        raise Exception("No decoder exists in SurfaceCode object")
 
     def __add_x1_syndrome_extraction(self):
         self.circuit.hadamard(Q.X1())
@@ -208,6 +257,8 @@ class SurfaceCode:
         self.circuit.reset(Q.X4(), C.X4())
 
     def add_x_stabilizer_syndrome_extraction(self):
+        self.parts.append(SurfaceCodePart("Stabilizer X syndrome measurement", self.circuit.gates.__len__(), 28))
+
         self.__add_x1_syndrome_extraction()
         self.__add_x2_syndrome_extraction()
         self.__add_x3_syndrome_extraction()
@@ -242,6 +293,8 @@ class SurfaceCode:
         self.circuit.reset(Q.Z4(), C.Z4())
 
     def add_z_stabilizer_syndrome_extraction(self):
+        self.parts.append(SurfaceCodePart("Stabilizer Z syndrome measurement", self.circuit.gates.__len__(), 28))
+
         self.__add_z1_syndrome_extraction()
         self.__add_z2_syndrome_extraction()
         self.__add_z3_syndrome_extraction()
@@ -261,15 +314,20 @@ class SurfaceCode:
         """
         Calculates an appropriate recovery action based on the stabilizer Z syndrome measurement
         """
+        self.parts.append(SurfaceCodePart("Syndrome x recovery", self.circuit.gates.__len__(), 1))
         self.circuit.recovery_phase_flip(0)
 
     def add_recovery_from_syndrome_z_stabilizer(self):
         """
         Calculates an appropriate recovery action based on the stabilizer Z syndrome measurement
         """
+        self.parts.append(SurfaceCodePart("Syndrome z recovery", self.circuit.gates.__len__(), 1))
+
         self.circuit.recovery_bit_flip(4)
 
     def add_measure_all_data_qubits(self):
+        self.parts.append(SurfaceCodePart("Data qubit measurement", self.circuit.gates.__len__(), 9))
+
         self.circuit.measurement(Q.D1(), C.D1())
         self.circuit.measurement(Q.D2(), C.D2())
         self.circuit.measurement(Q.D3(), C.D3())
