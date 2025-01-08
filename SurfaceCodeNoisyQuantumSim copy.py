@@ -118,13 +118,13 @@ class SurfaceCodePart:
 """
 This class offers functions for simulating the rotated surface 17 code implementation using QuantumSim
 """
-class SurfaceCode:
+class NoisySurfaceCode:
     # Sources used for creating this class:
     # https://errorcorrectionzoo.org/c/surface-17#citation-3
     # https://arxiv.org/pdf/2303.17211
     # http://arxiv.org/pdf/1612.08208
     
-    def __init__(self):
+    def __init__(self, depolarizing_error_probability: float):
 
         # Simulating many qubits is expensive resource wise, the rotated surface 17 code is therefore simulated using only 10 qubits using QuantumSim.
         self.qubits = int(10)
@@ -132,6 +132,8 @@ class SurfaceCode:
         self.bits = int(17)
         # Memory optimization flag, when simulating many qubits (10 or more) this flag should always be set to TRUE
         self.save_instructions_flag = True
+        # The depolarizing error probability (DEP) factor is a nice way of changing the overall noise of a circuit
+        self.dep = depolarizing_error_probability
 
         self.circuit = Circuit(self.qubits, self.bits, self.save_instructions_flag)
         self.circuit.classicalBitRegister.create_partition(0, 3, "AncX")
@@ -148,10 +150,10 @@ class SurfaceCode:
         return False
     
     def toString(self) -> str:
-        output = "Surface code circuitry consists of: \n"
+        output = "Noisy surface code circuitry consists of: \n"
         for part in self.parts:
             output += part.toString()
-        output += "Total gates in SurfaceCode object: " + str(self.circuit.gates.__len__())
+        output += "Total gates in NoisySurfaceCode object: " + str(self.circuit.gates.__len__())
         return output
 
     def add_encoder_circuit(self):
@@ -160,23 +162,23 @@ class SurfaceCode:
         
         self.parts.append(SurfaceCodePart("Encoder", self.circuit.gates.__len__(), 12))
 
-        # Step 1. initialize D2, D4, D6, D8 in Hadamard basis.
-        self.circuit.hadamard(Q.D2())
-        self.circuit.hadamard(Q.D4())
-        self.circuit.hadamard(Q.D6())
-        self.circuit.hadamard(Q.D8())
+        # Step 1. initialize D2, D4, D6, D8 in noisy_hadamard basis.
+        self.circuit.noisy_hadamard(Q.D2(), self.dep)
+        self.circuit.noisy_hadamard(Q.D4(), self.dep)
+        self.circuit.noisy_hadamard(Q.D6(), self.dep)
+        self.circuit.noisy_hadamard(Q.D8(), self.dep)
 
         # Step 2. Make four different Bell and Greenberger-Horne-Zeilinger states.
-        self.circuit.cnot(Q.D2(), Q.D1())
-        self.circuit.cnot(Q.D6(), Q.D3())
-        self.circuit.cnot(Q.D6(), Q.D5())
-        self.circuit.cnot(Q.D4(), Q.D5())
-        self.circuit.cnot(Q.D4(), Q.D7())
-        self.circuit.cnot(Q.D8(), Q.D9())
+        self.circuit.noisy_noisy_cnot(Q.D2(), Q.D1(), self.dep)
+        self.circuit.noisy_noisy_cnot(Q.D6(), Q.D3(), self.dep)
+        self.circuit.noisy_noisy_cnot(Q.D6(), Q.D5(), self.dep)
+        self.circuit.noisy_noisy_cnot(Q.D4(), Q.D5(), self.dep)
+        self.circuit.noisy_noisy_cnot(Q.D4(), Q.D7(), self.dep)
+        self.circuit.noisy_noisy_cnot(Q.D8(), Q.D9(), self.dep)
 
         # Step 3. Entangle all Bell and Greenberger-Horne-Zeilinger states.
-        self.circuit.cnot(Q.D3(), Q.D2())
-        self.circuit.cnot(Q.D7(), Q.D8())
+        self.circuit.noisy_noisy_cnot(Q.D3(), Q.D2(), self.dep)
+        self.circuit.noisy_noisy_cnot(Q.D7(), Q.D8(), self.dep)
 
     def remove_encoder_circuit(self):
         for part in self.parts:
@@ -195,22 +197,22 @@ class SurfaceCode:
 
         # Decoding is the opposite of encoding, reverting the encoding steps results in the initiliazed state
         # Step 1. Dentangle all Bell and Greenberger-Horne-Zeilinger states.
-        self.circuit.cnot(Q.D3(), Q.D2())
-        self.circuit.cnot(Q.D7(), Q.D8())
+        self.circuit.noisy_cnot(Q.D3(), Q.D2(), self.dep)
+        self.circuit.noisy_cnot(Q.D7(), Q.D8(), self.dep)
 
         # Step 2. Dentagle different Bell and Greenberger-Horne-Zeilinger states.
-        self.circuit.cnot(Q.D2(), Q.D1())
-        self.circuit.cnot(Q.D6(), Q.D3())
-        self.circuit.cnot(Q.D6(), Q.D5())
-        self.circuit.cnot(Q.D4(), Q.D5())
-        self.circuit.cnot(Q.D4(), Q.D7())
-        self.circuit.cnot(Q.D8(), Q.D9())
+        self.circuit.noisy_cnot(Q.D2(), Q.D1(), self.dep)
+        self.circuit.noisy_cnot(Q.D6(), Q.D3(), self.dep)
+        self.circuit.noisy_cnot(Q.D6(), Q.D5(), self.dep)
+        self.circuit.noisy_cnot(Q.D4(), Q.D5(), self.dep)
+        self.circuit.noisy_cnot(Q.D4(), Q.D7(), self.dep)
+        self.circuit.noisy_cnot(Q.D8(), Q.D9(), self.dep)
 
-        # Step 3. Put D2, D4, D6, D8 out of the Hadamard basis.
-        self.circuit.hadamard(Q.D2())
-        self.circuit.hadamard(Q.D4())
-        self.circuit.hadamard(Q.D6())
-        self.circuit.hadamard(Q.D8())
+        # Step 3. Put D2, D4, D6, D8 out of the noisy_hadamard basis.
+        self.circuit.noisy_hadamard(Q.D2(), self.dep)
+        self.circuit.noisy_hadamard(Q.D4(), self.dep)
+        self.circuit.noisy_hadamard(Q.D6(), self.dep)
+        self.circuit.noisy_hadamard(Q.D8(), self.dep)
 
     def remove_decoder_circuit(self):
         for part in self.parts:
@@ -221,38 +223,38 @@ class SurfaceCode:
         raise Exception("No decoder exists in SurfaceCode object")
 
     def __add_x1_syndrome_extraction(self):
-        self.circuit.hadamard(Q.X1())
-        self.circuit.cnot(Q.X1(), Q.D1())
-        self.circuit.cnot(Q.X1(), Q.D2())
-        self.circuit.hadamard(Q.X1())
+        self.circuit.noisy_hadamard(Q.X1(), self.dep)
+        self.circuit.noisy_cnot(Q.X1(), Q.D1(), self.dep)
+        self.circuit.noisy_cnot(Q.X1(), Q.D2(), self.dep)
+        self.circuit.noisy_hadamard(Q.X1(), self.dep)
         self.circuit.measurement(Q.X1(), C.X1())
         self.circuit.reset(Q.X1(), C.X1())
 
     def __add_x2_syndrome_extraction(self):
-        self.circuit.hadamard(Q.X2())
-        self.circuit.cnot(Q.X2(), Q.D7())
-        self.circuit.cnot(Q.X2(), Q.D4())
-        self.circuit.cnot(Q.X2(), Q.D8())
-        self.circuit.cnot(Q.X2(), Q.D5())
-        self.circuit.hadamard(Q.X2())
+        self.circuit.noisy_hadamard(Q.X2())
+        self.circuit.noisy_cnot(Q.X2(), Q.D7())
+        self.circuit.noisy_cnot(Q.X2(), Q.D4())
+        self.circuit.noisy_cnot(Q.X2(), Q.D8())
+        self.circuit.noisy_cnot(Q.X2(), Q.D5())
+        self.circuit.noisy_hadamard(Q.X2())
         self.circuit.measurement(Q.X2(), C.X2())
         self.circuit.reset(Q.X2(), C.X2())
 
     def __add_x3_syndrome_extraction(self):
-        self.circuit.hadamard(Q.X3())
-        self.circuit.cnot(Q.X3(), Q.D5())
-        self.circuit.cnot(Q.X3(), Q.D2())
-        self.circuit.cnot(Q.X3(), Q.D6())
-        self.circuit.cnot(Q.X3(), Q.D3())
-        self.circuit.hadamard(Q.X3())
+        self.circuit.noisy_hadamard(Q.X3())
+        self.circuit.noisy_cnot(Q.X3(), Q.D5())
+        self.circuit.noisy_cnot(Q.X3(), Q.D2())
+        self.circuit.noisy_cnot(Q.X3(), Q.D6())
+        self.circuit.noisy_cnot(Q.X3(), Q.D3())
+        self.circuit.noisy_hadamard(Q.X3())
         self.circuit.measurement(Q.X3(), C.X3())
         self.circuit.reset(Q.X3(), C.X3())
 
     def __add_x4_syndrome_extraction(self):
-        self.circuit.hadamard(Q.X4())
-        self.circuit.cnot(Q.X4(), Q.D8())
-        self.circuit.cnot(Q.X4(), Q.D9())
-        self.circuit.hadamard(Q.X4())
+        self.circuit.noisy_hadamard(Q.X4())
+        self.circuit.noisy_cnot(Q.X4(), Q.D8())
+        self.circuit.noisy_cnot(Q.X4(), Q.D9())
+        self.circuit.noisy_hadamard(Q.X4())
         self.circuit.measurement(Q.X4(), C.X4())
         self.circuit.reset(Q.X4(), C.X4())
 
@@ -265,30 +267,30 @@ class SurfaceCode:
         self.__add_x4_syndrome_extraction()
 
     def __add_z1_syndrome_extraction(self):
-        self.circuit.cnot(Q.D7(), Q.Z1())
-        self.circuit.cnot(Q.D4(), Q.Z1())
+        self.circuit.noisy_cnot(Q.D7(), Q.Z1())
+        self.circuit.noisy_cnot(Q.D4(), Q.Z1())
         self.circuit.measurement(Q.Z1(), C.Z1())
         self.circuit.reset(Q.Z1(), C.Z1())
 
     def __add_z2_syndrome_extraction(self):
-        self.circuit.cnot(Q.D4(), Q.Z2())
-        self.circuit.cnot(Q.D5(), Q.Z2())
-        self.circuit.cnot(Q.D1(), Q.Z2())
-        self.circuit.cnot(Q.D2(), Q.Z2())
+        self.circuit.noisy_cnot(Q.D4(), Q.Z2())
+        self.circuit.noisy_cnot(Q.D5(), Q.Z2())
+        self.circuit.noisy_cnot(Q.D1(), Q.Z2())
+        self.circuit.noisy_cnot(Q.D2(), Q.Z2())
         self.circuit.measurement(Q.Z2(), C.Z2())
         self.circuit.reset(Q.Z2(), C.Z2())
 
     def __add_z3_syndrome_extraction(self):
-        self.circuit.cnot(Q.D8(), Q.Z3())
-        self.circuit.cnot(Q.D9(), Q.Z3())
-        self.circuit.cnot(Q.D5(), Q.Z3())
-        self.circuit.cnot(Q.D6(), Q.Z3())
+        self.circuit.noisy_cnot(Q.D8(), Q.Z3())
+        self.circuit.noisy_cnot(Q.D9(), Q.Z3())
+        self.circuit.noisy_cnot(Q.D5(), Q.Z3())
+        self.circuit.noisy_cnot(Q.D6(), Q.Z3())
         self.circuit.measurement(Q.Z3(), C.Z3())
         self.circuit.reset(Q.Z3(), C.Z3())
 
     def __add_z4_syndrome_extraction(self):
-        self.circuit.cnot(Q.D6(), Q.Z4())
-        self.circuit.cnot(Q.D3(), Q.Z4())
+        self.circuit.noisy_cnot(Q.D6(), Q.Z4())
+        self.circuit.noisy_cnot(Q.D3(), Q.Z4())
         self.circuit.measurement(Q.Z4(), C.Z4())
         self.circuit.reset(Q.Z4(), C.Z4())
 

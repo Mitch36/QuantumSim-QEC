@@ -1322,7 +1322,7 @@ class Circuit:
         self.instructions.append(CNOT(self.N, target, control))  if self.save_instructions else self.operations.append(combined_operation)
 
     # Define the new cnot gate with integrated noise 
-    def noisy_cnot(self, c_qubit: int, t_qubit: int, c_p: float= None, t_p: float= None, c_T1: float= None, t_T1: float= None, c_T2: float= None, t_T2: float= None, gate_error: float=None):
+    def noisy_cnot(self, c_qubit: int, t_qubit: int, gate_error: float=None, c_p: float= None, t_p: float= None, c_T1: float= None, t_T1: float= None, c_T2: float= None, t_T2: float= None):
         """Adds a noisy cnot gate to the circuit with depolarizing and
         relaxation errors on both qubits during the unitary evolution.
 
@@ -1529,6 +1529,31 @@ class Circuit:
         gate_as_string = '.'*self.N
         gate_as_list = list(gate_as_string)
         gate_as_list[targetQubit] = 'R'
+        gate_as_string = ''.join(gate_as_list)
+        self.gates.append(gate_as_string)
+
+    def noisy_reset(self, q: int, readBit: int, p: float = None, T1: float = None, T2: float = None):
+        """Adds a noisy reset gate to the circuit
+
+        Args:
+            q (int): Qubit to operate on.
+            p (float): Single-qubit depolarizing error probability.
+            T1 (float): Qubit's amplitude damping time in ns.
+            T2 (float): Qubit's dephasing time in ns.
+        """
+        # If any noise parameter is None use the generated value
+        if p is None:
+            p = self.parameters["p"][q]
+        if T1 is None:
+            T1 = self.parameters["T1"][q]
+        if T2 is None:
+            T2 = self.parameters["T2"][q]
+
+        self.instructions.append(NoisyReset(q, readBit, self.N, p, T1, T2))
+        self.descriptions.append(f"Noisy reset on Qubit {q} read from bit: {readBit}")
+        gate_as_string = '.'*self.N
+        gate_as_list = list(gate_as_string)
+        gate_as_list[q] = 'R'
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
 
@@ -1771,7 +1796,11 @@ class Circuit:
             instruction.setPhiControl(self.phi[instruction.c_qubit])
             instruction.setPhiTarget(self.phi[instruction.t_qubit])
             self.state_vector.apply_noisy_operation(instruction.getNoisyOperation())
-    
+        elif(isinstance(instruction, NoisyReset)):
+            if(self.classicalBitRegister.read(instruction.readBit == 1)):
+                instruction.setTheta(np.pi)
+                instruction.setPhi(-self.phi[instruction.q])
+                self.state_vector.apply_noisy_operation(instruction.getNoisyOperation())
     def __direct_execute__(self, operation: CircuitUnitaryOperation):
         self.state_vector.apply_unitary_operation(operation)
         self.quantum_states.append(self.state_vector.get_quantum_state())
@@ -1790,6 +1819,10 @@ class Circuit:
         return qubitValue
     
     def __reset_execute__(self, targetQubit: int, readBit: int):
+        if(self.classicalBitRegister.read(readBit) == 1):
+            self.state_vector.apply_unitary_operation(CircuitUnitaryOperation.get_combined_operation_for_pauli_x(targetQubit, self.N))
+
+    def __noisy_reset_execute__(self, targetQubit: int, readBit: int):
         if(self.classicalBitRegister.read(readBit) == 1):
             self.state_vector.apply_unitary_operation(CircuitUnitaryOperation.get_combined_operation_for_pauli_x(targetQubit, self.N))
                 
@@ -3378,3 +3411,21 @@ class NoisyCNOT(NoisyGateInstruction):
         # Construct the full CNOT operation with swaps
         operation = swap_control @ swap_target @ cnot_operation @ swap_target.T.conj() @ swap_control.T.conj() 
         return operation
+    
+class NoisyReset(NoisyGateInstruction):
+    def __init__(self, q: int, readBit: int, totalQubits: int, p: float = None, T1: float = None, T2: float = None):
+        self.q = q
+        self.readBit = readBit
+        self.N = totalQubits
+        self.p = p
+        self.T1 = T1
+        self.T2 = T2
+
+    def setTheta(self, theta: float):
+        self.theta = theta
+        
+    def setPhi(self, phi: float):
+        self.phi = phi
+
+    def getNoisyOperation(self) -> CircuitUnitaryOperation:
+        return CircuitUnitaryOperation.get_combined_operation_for_qubit(NoisyGate.construct(self.theta, self.phi, self.p, self.T1, self.T2),self.q, self.N)
