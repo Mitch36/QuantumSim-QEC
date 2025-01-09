@@ -1056,17 +1056,23 @@ class ClassicalBitRegister:
     def getAmountOfBits(self):
         return self.numberClassicBits
 
-    def toString(self):
+    def toString(self, beginBit: int=0, endBit: int=0):
         
         output = ""
-        for i in range(self.numberClassicBits):
-            # Check first if the index is a beginning of a partition
-            for partition in self.partitions:
-                if(partition.begin == i):
-                    output = output + " " + partition.name + ":"
-                    break
-            output = output + str(self.register[i])
-        return output
+        if beginBit == 0 and endBit == 0:
+            for i in range(self.numberClassicBits):
+                # Check first if the index is a beginning of a partition
+                for partition in self.partitions:
+                    if(partition.begin == i):
+                        output = output + " " + partition.name + ":"
+                        break
+                output = output + str(self.register[i])
+            return output
+        else:
+            for i in range(beginBit, endBit, 1):
+                output = output + str(self.register[i])
+            return output
+
 
     def print(self):
         print(self.toString())
@@ -1104,7 +1110,8 @@ class Circuit:
 
         # Load in the device parameters json
         device_params = DeviceParameters()
-        device_params.load_from_json("./assets/noise_parameters/QiskitKyiv_DeviceParameters.json")
+        
+        device_params.load_from_json("./assets/noise_parameters/Virtual_Quantum_Computer.json")
         qiskit_kyiv_parameter_dict = device_params.__dict__()
 
         # Define a list of parameter values based on the stored device parameters
@@ -1322,7 +1329,7 @@ class Circuit:
         self.instructions.append(CNOT(self.N, target, control))  if self.save_instructions else self.operations.append(combined_operation)
 
     # Define the new cnot gate with integrated noise 
-    def noisy_cnot(self, c_qubit: int, t_qubit: int, gate_error: float=None, c_p: float= None, t_p: float= None, c_T1: float= None, t_T1: float= None, c_T2: float= None, t_T2: float= None):
+    def noisy_cnot(self, c_qubit: int, t_qubit: int, c_p: float= None, t_p: float= None, gate_error: float=None, c_T1: float= None, t_T1: float= None, c_T2: float= None, t_T2: float= None):
         """Adds a noisy cnot gate to the circuit with depolarizing and
         relaxation errors on both qubits during the unitary evolution.
 
@@ -1352,9 +1359,28 @@ class Circuit:
         if t_T2 is None:
             t_T2 = self.parameters["T2"][t_qubit]
         if gate_error is None:
-            gate_error = 0.1 # default was set to 1
+            gate_error = 0.0000000000001 # default was set to 1
 
-        self.instructions.append(NoisyCNOT(c_qubit, t_qubit, self.N, c_p, t_p, c_T1, t_T1, c_T2, t_T2, gate_error))
+        # Original implementation
+        # self.instructions.append(NoisyCNOT(c_qubit, t_qubit, self.N, c_p, t_p, c_T1, t_T1, c_T2, t_T2, gate_error))
+
+        # Mimicked implementation by adding four pauli x gates to create additional noise 
+        # self.noisy_pauli_x(c_qubit, c_p, c_T1, c_T2)
+        # self.pauli_x(c_qubit)
+        # self.noisy_pauli_x(c_qubit, c_p, c_T1, c_T2)
+        # self.noisy_pauli_x(t_qubit, t_p, t_T1, t_T2)
+        # self.pauli_x(t_qubit)
+
+        
+
+        self.instructions.append(CNOT(self.N, t_qubit, c_qubit))
+        
+        self.noisy_pauli_x(t_qubit, t_p, t_T1, t_T2)
+        self.noisy_pauli_x(t_qubit, t_p, t_T1, t_T2)
+        self.noisy_pauli_x(c_qubit, c_p, c_T1, c_T2)
+        self.noisy_pauli_x(c_qubit, c_p, c_T1, c_T2)
+
+
         self.descriptions.append(f"Noisy CNOT with target qubit {t_qubit} and control qubit {c_qubit}")
         gate_as_string = '.'*self.N
         gate_as_list = list(gate_as_string)
@@ -1795,6 +1821,8 @@ class Circuit:
         elif isinstance(instruction, NoisyCNOT):
             instruction.setPhiControl(self.phi[instruction.c_qubit])
             instruction.setPhiTarget(self.phi[instruction.t_qubit])
+            instruction.setTheta(np.pi)
+            instruction
             self.state_vector.apply_noisy_operation(instruction.getNoisyOperation())
         elif(isinstance(instruction, NoisyReset)):
             if(self.classicalBitRegister.read(instruction.readBit == 1)):
@@ -1825,6 +1853,7 @@ class Circuit:
     def __noisy_reset_execute__(self, targetQubit: int, readBit: int):
         if(self.classicalBitRegister.read(readBit) == 1):
             self.state_vector.apply_unitary_operation(CircuitUnitaryOperation.get_combined_operation_for_pauli_x(targetQubit, self.N))
+
                 
     def execute(self, print_state=False, create_new_state_vector=True):
         if create_new_state_vector:
@@ -2084,11 +2113,11 @@ class QuantumUtil:
     Function to run a quantum circuit many times and measure its classical register state many times
     """
     @staticmethod
-    def measure_circuit_bit_register(circuit:Circuit, nr_measurements=100):
+    def measure_circuit_bit_register(circuit:Circuit, nr_measurements=100, beginBit: int=0, endBit: int = 0):
         result = []
         for i in range(nr_measurements):
             circuit.execute()
-            result.append(circuit.classicalBitRegister.toString())
+            result.append(circuit.classicalBitRegister.toString(beginBit, endBit))
         return result
 
     """
@@ -2888,8 +2917,6 @@ class NoisyGate:
               Array representing a CNOT two-qubit noisy quantum gate.
         """
 
-        #TODO hardcode that the value with np.sqrt can never be zero to prevent exceptions
-
         """ 0) CONSTANTS """
         tg = 35*10**(-9)
         t_cr = t_cnot/2-tg
@@ -3373,6 +3400,9 @@ class NoisyCNOT(NoisyGateInstruction):
         self.c_T2 = c_T2
         self.t_T2 = t_T2
         self.gate_error = gate_error
+
+    def setTheta(self, theta: float):
+        self.theta = theta
         
     def setPhiControl(self, phi: float):
         self.c_phi = phi
@@ -3381,6 +3411,9 @@ class NoisyCNOT(NoisyGateInstruction):
         self.t_phi = phi
 
     def getNoisyOperation(self) -> CircuitUnitaryOperation:
+        # This is a solution for mimicking noise of two qubits by adding single qubit gates, returns a pauli x gate
+        # return CircuitUnitaryOperation.get_combined_operation_for_qubit(NoisyGate.construct(self.theta, self.c_phi, self.p, self.T1, self.T2),self.q, self.N)
+
         gate_length = 5.61777778e-07
 
         # Create an identity matrix for the remaining qubits

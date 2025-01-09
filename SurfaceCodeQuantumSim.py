@@ -350,7 +350,7 @@ class SurfaceCode:
         self.circuit.pauli_x(Q.D7())
         self.circuit.pauli_x(Q.D8())
         self.circuit.pauli_x(Q.D9())
-
+     
     def add_pauli_z_on_all_data_qubits(self):
         self.parts.append(SurfaceCodePart("Pauli Z on all data qubits", self.circuit.gates.__len__(), 9))
 
@@ -363,6 +363,19 @@ class SurfaceCode:
         self.circuit.pauli_z(Q.D7())
         self.circuit.pauli_z(Q.D8())
         self.circuit.pauli_z(Q.D9())
+
+    def add_noisy_pauli_x_on_all_data_qubits(self):
+        self.parts.append(SurfaceCodePart("Noisy pauli X on all data qubits", self.circuit.gates.__len__(), 9))
+
+        self.circuit.noisy_pauli_x(Q.D1(), 0.01)
+        self.circuit.noisy_pauli_x(Q.D2(), 0.01)
+        self.circuit.noisy_pauli_x(Q.D3(), 0.01)
+        self.circuit.noisy_pauli_x(Q.D4(), 0.01)
+        self.circuit.noisy_pauli_x(Q.D5(), 0.01)
+        self.circuit.noisy_pauli_x(Q.D6(), 0.01)
+        self.circuit.noisy_pauli_x(Q.D7(), 0.01)
+        self.circuit.noisy_pauli_x(Q.D8(), 0.01)
+        self.circuit.noisy_pauli_x(Q.D9(), 0.01)
 
 
 

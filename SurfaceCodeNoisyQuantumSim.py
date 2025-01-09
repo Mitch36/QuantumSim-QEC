@@ -156,29 +156,26 @@ class NoisySurfaceCode:
         output += "Total gates in NoisySurfaceCode object: " + str(self.circuit.gates.__len__())
         return output
 
-    def add_encoder_circuit(self):
-        if(self.has("Encoder")):
-            raise Exception("SurfaceCode already has an encoder circuit")
-        
+    def add_encoder_circuit(self):       
         self.parts.append(SurfaceCodePart("Encoder", self.circuit.gates.__len__(), 12))
 
-        # Step 1. initialize D2, D4, D6, D8 in noisy_hadamard basis.
-        self.circuit.noisy_hadamard(Q.D2(), self.dep)
-        self.circuit.noisy_hadamard(Q.D4(), self.dep)
-        self.circuit.noisy_hadamard(Q.D6(), self.dep)
-        self.circuit.noisy_hadamard(Q.D8(), self.dep)
+        # Step 1. initialize D2, D4, D6, D8 in Hadamard basis.
+        self.circuit.hadamard(Q.D2())
+        self.circuit.hadamard(Q.D4())
+        self.circuit.hadamard(Q.D6())
+        self.circuit.hadamard(Q.D8())
 
         # Step 2. Make four different Bell and Greenberger-Horne-Zeilinger states.
-        self.circuit.noisy_noisy_cnot(Q.D2(), Q.D1(), self.dep)
-        self.circuit.noisy_noisy_cnot(Q.D6(), Q.D3(), self.dep)
-        self.circuit.noisy_noisy_cnot(Q.D6(), Q.D5(), self.dep)
-        self.circuit.noisy_noisy_cnot(Q.D4(), Q.D5(), self.dep)
-        self.circuit.noisy_noisy_cnot(Q.D4(), Q.D7(), self.dep)
-        self.circuit.noisy_noisy_cnot(Q.D8(), Q.D9(), self.dep)
+        self.circuit.cnot(Q.D2(), Q.D1())
+        self.circuit.cnot(Q.D6(), Q.D3())
+        self.circuit.cnot(Q.D6(), Q.D5())
+        self.circuit.cnot(Q.D4(), Q.D5())
+        self.circuit.cnot(Q.D4(), Q.D7())
+        self.circuit.cnot(Q.D8(), Q.D9())
 
         # Step 3. Entangle all Bell and Greenberger-Horne-Zeilinger states.
-        self.circuit.noisy_noisy_cnot(Q.D3(), Q.D2(), self.dep)
-        self.circuit.noisy_noisy_cnot(Q.D7(), Q.D8(), self.dep)
+        self.circuit.cnot(Q.D3(), Q.D2())
+        self.circuit.cnot(Q.D7(), Q.D8())
 
     def remove_encoder_circuit(self):
         for part in self.parts:
@@ -188,31 +185,27 @@ class NoisySurfaceCode:
                 return
         raise Exception("No encoder exists in SurfaceCode object")
 
-    def add_decoder_circuit(self):
-
-        if(self.has("Decoder")):
-            raise Exception("SurfaceCode already has an decoder circuit")
-        
+    def add_decoder_circuit(self):        
         self.parts.append(SurfaceCodePart("Decoder", self.circuit.gates.__len__(), 12))
 
         # Decoding is the opposite of encoding, reverting the encoding steps results in the initiliazed state
         # Step 1. Dentangle all Bell and Greenberger-Horne-Zeilinger states.
-        self.circuit.noisy_cnot(Q.D3(), Q.D2(), self.dep)
-        self.circuit.noisy_cnot(Q.D7(), Q.D8(), self.dep)
+        self.circuit.cnot(Q.D3(), Q.D2())
+        self.circuit.cnot(Q.D7(), Q.D8())
 
         # Step 2. Dentagle different Bell and Greenberger-Horne-Zeilinger states.
-        self.circuit.noisy_cnot(Q.D2(), Q.D1(), self.dep)
-        self.circuit.noisy_cnot(Q.D6(), Q.D3(), self.dep)
-        self.circuit.noisy_cnot(Q.D6(), Q.D5(), self.dep)
-        self.circuit.noisy_cnot(Q.D4(), Q.D5(), self.dep)
-        self.circuit.noisy_cnot(Q.D4(), Q.D7(), self.dep)
-        self.circuit.noisy_cnot(Q.D8(), Q.D9(), self.dep)
+        self.circuit.cnot(Q.D2(), Q.D1())
+        self.circuit.cnot(Q.D6(), Q.D3())
+        self.circuit.cnot(Q.D6(), Q.D5())
+        self.circuit.cnot(Q.D4(), Q.D5())
+        self.circuit.cnot(Q.D4(), Q.D7())
+        self.circuit.cnot(Q.D8(), Q.D9())
 
-        # Step 3. Put D2, D4, D6, D8 out of the noisy_hadamard basis.
-        self.circuit.noisy_hadamard(Q.D2(), self.dep)
-        self.circuit.noisy_hadamard(Q.D4(), self.dep)
-        self.circuit.noisy_hadamard(Q.D6(), self.dep)
-        self.circuit.noisy_hadamard(Q.D8(), self.dep)
+        # Step 3. Put D2, D4, D6, D8 out of the Hadamard basis.
+        self.circuit.hadamard(Q.D2())
+        self.circuit.hadamard(Q.D4())
+        self.circuit.hadamard(Q.D6())
+        self.circuit.hadamard(Q.D8())
 
     def remove_decoder_circuit(self):
         for part in self.parts:
@@ -231,30 +224,30 @@ class NoisySurfaceCode:
         self.circuit.reset(Q.X1(), C.X1())
 
     def __add_x2_syndrome_extraction(self):
-        self.circuit.noisy_hadamard(Q.X2())
-        self.circuit.noisy_cnot(Q.X2(), Q.D7())
-        self.circuit.noisy_cnot(Q.X2(), Q.D4())
-        self.circuit.noisy_cnot(Q.X2(), Q.D8())
-        self.circuit.noisy_cnot(Q.X2(), Q.D5())
-        self.circuit.noisy_hadamard(Q.X2())
+        self.circuit.noisy_hadamard(Q.X2(), self.dep)
+        self.circuit.noisy_cnot(Q.X2(), Q.D7(), self.dep)
+        self.circuit.noisy_cnot(Q.X2(), Q.D4(), self.dep)
+        self.circuit.noisy_cnot(Q.X2(), Q.D8(), self.dep)
+        self.circuit.noisy_cnot(Q.X2(), Q.D5(), self.dep)
+        self.circuit.noisy_hadamard(Q.X2(), self.dep)
         self.circuit.measurement(Q.X2(), C.X2())
         self.circuit.reset(Q.X2(), C.X2())
 
     def __add_x3_syndrome_extraction(self):
-        self.circuit.noisy_hadamard(Q.X3())
-        self.circuit.noisy_cnot(Q.X3(), Q.D5())
-        self.circuit.noisy_cnot(Q.X3(), Q.D2())
-        self.circuit.noisy_cnot(Q.X3(), Q.D6())
-        self.circuit.noisy_cnot(Q.X3(), Q.D3())
-        self.circuit.noisy_hadamard(Q.X3())
+        self.circuit.noisy_hadamard(Q.X3(), self.dep)
+        self.circuit.noisy_cnot(Q.X3(), Q.D5(), self.dep)
+        self.circuit.noisy_cnot(Q.X3(), Q.D2(), self.dep)
+        self.circuit.noisy_cnot(Q.X3(), Q.D6(), self.dep)
+        self.circuit.noisy_cnot(Q.X3(), Q.D3(), self.dep)
+        self.circuit.noisy_hadamard(Q.X3(), self.dep)
         self.circuit.measurement(Q.X3(), C.X3())
         self.circuit.reset(Q.X3(), C.X3())
 
     def __add_x4_syndrome_extraction(self):
-        self.circuit.noisy_hadamard(Q.X4())
-        self.circuit.noisy_cnot(Q.X4(), Q.D8())
-        self.circuit.noisy_cnot(Q.X4(), Q.D9())
-        self.circuit.noisy_hadamard(Q.X4())
+        self.circuit.noisy_hadamard(Q.X4(), self.dep)
+        self.circuit.noisy_cnot(Q.X4(), Q.D8(), self.dep)
+        self.circuit.noisy_cnot(Q.X4(), Q.D9(), self.dep)
+        self.circuit.noisy_hadamard(Q.X4(), self.dep)
         self.circuit.measurement(Q.X4(), C.X4())
         self.circuit.reset(Q.X4(), C.X4())
 
@@ -267,30 +260,30 @@ class NoisySurfaceCode:
         self.__add_x4_syndrome_extraction()
 
     def __add_z1_syndrome_extraction(self):
-        self.circuit.noisy_cnot(Q.D7(), Q.Z1())
-        self.circuit.noisy_cnot(Q.D4(), Q.Z1())
+        self.circuit.noisy_cnot(Q.D7(), Q.Z1(), self.dep)
+        self.circuit.noisy_cnot(Q.D4(), Q.Z1(), self.dep)
         self.circuit.measurement(Q.Z1(), C.Z1())
         self.circuit.reset(Q.Z1(), C.Z1())
 
     def __add_z2_syndrome_extraction(self):
-        self.circuit.noisy_cnot(Q.D4(), Q.Z2())
-        self.circuit.noisy_cnot(Q.D5(), Q.Z2())
-        self.circuit.noisy_cnot(Q.D1(), Q.Z2())
-        self.circuit.noisy_cnot(Q.D2(), Q.Z2())
+        self.circuit.noisy_cnot(Q.D4(), Q.Z2(), self.dep)
+        self.circuit.noisy_cnot(Q.D5(), Q.Z2(), self.dep)
+        self.circuit.noisy_cnot(Q.D1(), Q.Z2(), self.dep)
+        self.circuit.noisy_cnot(Q.D2(), Q.Z2(), self.dep)
         self.circuit.measurement(Q.Z2(), C.Z2())
         self.circuit.reset(Q.Z2(), C.Z2())
 
     def __add_z3_syndrome_extraction(self):
-        self.circuit.noisy_cnot(Q.D8(), Q.Z3())
-        self.circuit.noisy_cnot(Q.D9(), Q.Z3())
-        self.circuit.noisy_cnot(Q.D5(), Q.Z3())
-        self.circuit.noisy_cnot(Q.D6(), Q.Z3())
+        self.circuit.noisy_cnot(Q.D8(), Q.Z3(), self.dep)
+        self.circuit.noisy_cnot(Q.D9(), Q.Z3(), self.dep)
+        self.circuit.noisy_cnot(Q.D5(), Q.Z3(), self.dep)
+        self.circuit.noisy_cnot(Q.D6(), Q.Z3(), self.dep)
         self.circuit.measurement(Q.Z3(), C.Z3())
         self.circuit.reset(Q.Z3(), C.Z3())
 
     def __add_z4_syndrome_extraction(self):
-        self.circuit.noisy_cnot(Q.D6(), Q.Z4())
-        self.circuit.noisy_cnot(Q.D3(), Q.Z4())
+        self.circuit.noisy_cnot(Q.D6(), Q.Z4(), self.dep)
+        self.circuit.noisy_cnot(Q.D3(), Q.Z4(), self.dep)
         self.circuit.measurement(Q.Z4(), C.Z4())
         self.circuit.reset(Q.Z4(), C.Z4())
 
@@ -340,31 +333,43 @@ class NoisySurfaceCode:
         self.circuit.measurement(Q.D8(), C.D8())
         self.circuit.measurement(Q.D9(), C.D9())
 
-    def add_pauli_x_on_all_data_qubits(self):
-        self.parts.append(SurfaceCodePart("Pauli X on all data qubits", self.circuit.gates.__len__(), 9))
+    def add_hadamard_all_data_qubits(self):
+        self.parts.append(SurfaceCodePart("Hadamard on all data qubits", self.circuit.gates.__len__(), 9))
+        self.circuit.hadamard(Q.D1())
+        self.circuit.hadamard(Q.D2())
+        self.circuit.hadamard(Q.D3())
+        self.circuit.hadamard(Q.D4())
+        self.circuit.hadamard(Q.D5())
+        self.circuit.hadamard(Q.D6())
+        self.circuit.hadamard(Q.D7())
+        self.circuit.hadamard(Q.D8())
+        self.circuit.hadamard(Q.D9())
 
-        self.circuit.pauli_x(Q.D1())
-        self.circuit.pauli_x(Q.D2())
-        self.circuit.pauli_x(Q.D3())
-        self.circuit.pauli_x(Q.D4())
-        self.circuit.pauli_x(Q.D5())
-        self.circuit.pauli_x(Q.D6())
-        self.circuit.pauli_x(Q.D7())
-        self.circuit.pauli_x(Q.D8())
-        self.circuit.pauli_x(Q.D9())
+    def add_noisy_pauli_x_on_all_data_qubits(self):
+        self.parts.append(SurfaceCodePart("Noisy pauli X on all data qubits", self.circuit.gates.__len__(), 9))
 
-    def add_pauli_z_on_all_data_qubits(self):
-        self.parts.append(SurfaceCodePart("Pauli Z on all data qubits", self.circuit.gates.__len__(), 9))
+        self.circuit.noisy_pauli_x(Q.D1(), self.dep)
+        self.circuit.noisy_pauli_x(Q.D2(), self.dep)
+        self.circuit.noisy_pauli_x(Q.D3(), self.dep)
+        self.circuit.noisy_pauli_x(Q.D4(), self.dep)
+        self.circuit.noisy_pauli_x(Q.D5(), self.dep)
+        self.circuit.noisy_pauli_x(Q.D6(), self.dep)
+        self.circuit.noisy_pauli_x(Q.D7(), self.dep)
+        self.circuit.noisy_pauli_x(Q.D8(), self.dep)
+        self.circuit.noisy_pauli_x(Q.D9(), self.dep)
 
-        self.circuit.pauli_z(Q.D1())
-        self.circuit.pauli_z(Q.D2())
-        self.circuit.pauli_z(Q.D3())
-        self.circuit.pauli_z(Q.D4())
-        self.circuit.pauli_z(Q.D5())
-        self.circuit.pauli_z(Q.D6())
-        self.circuit.pauli_z(Q.D7())
-        self.circuit.pauli_z(Q.D8())
-        self.circuit.pauli_z(Q.D9())
+    def add_noisy_pauli_z_on_all_data_qubits(self):
+        self.parts.append(SurfaceCodePart("Noisy pauli Z on all data qubits", self.circuit.gates.__len__(), 9))
+
+        self.circuit.noisy_pauli_z(Q.D1(), self.dep)
+        self.circuit.noisy_pauli_z(Q.D2(), self.dep)
+        self.circuit.noisy_pauli_z(Q.D3(), self.dep)
+        self.circuit.noisy_pauli_z(Q.D4(), self.dep)
+        self.circuit.noisy_pauli_z(Q.D5(), self.dep)
+        self.circuit.noisy_pauli_z(Q.D6(), self.dep)
+        self.circuit.noisy_pauli_z(Q.D7(), self.dep)
+        self.circuit.noisy_pauli_z(Q.D8(), self.dep)
+        self.circuit.noisy_pauli_z(Q.D9(), self.dep)
 
 
 
