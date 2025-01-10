@@ -30,35 +30,48 @@ class NoisySurfaceCodeBenchmark:
             else:
                 raise Exception(f"Forbidden character in stateString: {dataString}")
             
-        logString = str(id) + ";" + dataString + ";" + str(amountOfZeros) + ";" + str(amountOfOnes) + "\n"
+        logString = str(id) + ";" + dataString + ";" + str(amountOfZeros) + ";" + str(amountOfOnes) + ";" + str(self.sf.circuit.logical_error_count) + "\n"
+        self.sf.circuit.logical_error_count = 0
         print(logString)
         self.quantumStateLog.append(logString)
 
     def __build_nine_qubit_pauli_x_benchmark_circuit__(self, pauli_X_Gates: int):
 
+        self.sf.add_encoder_circuit()    
+
         for x in range(int(pauli_X_Gates / self.stabilizer_rounds_interval)):
             for y in range(int(pauli_X_Gates / self.stabilizer_rounds_interval)):
                 self.sf.add_noisy_pauli_x_on_all_data_qubits()
-            self.sf.add_encoder_circuit()    
+            
             self.sf.add_x_stabilizer_syndrome_extraction()
             self.sf.add_z_stabilizer_syndrome_extraction()
             self.sf.add_recovery_from_syndrome_x_stabilizer()
             self.sf.add_recovery_from_syndrome_z_stabilizer()
-            self.sf.add_encoder_circuit()    
 
+        self.sf.add_decoder_circuit()    
         self.sf.add_measure_all_data_qubits()
 
 
-    def __build_nine_qubit_pauli_z_benchmark_circuit__(self, pauli_Z_Gates: int, stabilizer_rounds: int):
-        for i in range(pauli_Z_Gates):
-            self.sf.add_noisy_pauli_z_on_all_data_qubits()
+    def __build_nine_qubit_pauli_z_benchmark_circuit__(self, pauli_Z_Gates: int):
+        
+        self.sf.add_encoder_circuit()    
+        
+        for x in range(int(pauli_Z_Gates / self.stabilizer_rounds_interval)):
+            for y in range(int(pauli_Z_Gates / self.stabilizer_rounds_interval)):
+                self.sf.add_noisy_pauli_z_on_all_data_qubits()
+                
+            self.sf.add_x_stabilizer_syndrome_extraction()
+            self.sf.add_z_stabilizer_syndrome_extraction()
+            self.sf.add_recovery_from_syndrome_x_stabilizer()
+            self.sf.add_recovery_from_syndrome_z_stabilizer()
+            
+        self.sf.add_decoder_circuit()    
 
-        self.sf.add_hadamard_all_data_qubits()
         self.sf.add_measure_all_data_qubits()
         
     def export_to_file(self, fileName: str):
         with open(f"output/{fileName}.csv", "w") as file:
-            file.write("index;state;amountOfZeros;amountOfOnes\n")
+            file.write("Index;State;Amount_of_zeros;Amount_of_ones;Logical_error_count\n")
             for dataLog in self.quantumStateLog:
                 file.write(dataLog)
         file.close()
@@ -71,19 +84,19 @@ class NoisySurfaceCodeBenchmark:
             self.__save_state__(i, stateString)
         p = str(self.dep)
         p = p.replace(".", "_")
-        p = "SurfaceCode_Pauli_X_Benchmark_p" + p 
+        p = "SurfaceCode_Pauli_X_Benchmark_p" + p + "Pauli_Gates" + str(pauli_gates) 
         print(p)
         self.export_to_file(p)
 
     def build_and_run_nine_qubit_pauli_z_benchmark(self, pauli_gates: int, iterations: int = 100):
         self.__build_nine_qubit_pauli_z_benchmark_circuit__(pauli_gates)
         for i in range(iterations):
-            self.cr.execute()
-            stateString = self.cr.state_vector.measure()
+            self.sf.circuit.execute()
+            stateString = self.sf.circuit.classicalBitRegister.toString()
             self.__save_state__(i, stateString)
         p = str(self.dep)
         p = p.replace(".", "_")
-        p = "Nine_Qubit_Pauli_Z_Benchmark_p" + p 
+        p = "Nine_Qubit_Pauli_Z_Benchmark_p" + p + "Pauli_Gates" + str(pauli_gates) 
         print(p)
         self.export_to_file(p)
                 

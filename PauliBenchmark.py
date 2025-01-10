@@ -23,7 +23,6 @@ class PauliBenchmark:
                 raise Exception(f"Forbidden character in stateString: {stateString}")
             
         logString = str(id) + ";" + stateString + ";" + str(amountOfZeros) + ";" + str(amountOfOnes) + "\n"
-        print(logString)
         self.quantumStateLog.append(logString)
 
     def __add_measure_all_data_qubits__(self):
@@ -65,6 +64,7 @@ class PauliBenchmark:
 
     def __build_nine_qubit_pauli_z_benchmark_circuit__(self, pauli_Z_Gates: int):
         self.cr = Circuit(9, 9, True)
+        self.__add_hadamard_all_data_qubits__()
         for i in range(pauli_Z_Gates):
             self.cr.noisy_pauli_z(0, self.dep)
             self.cr.noisy_pauli_z(1, self.dep)
@@ -94,7 +94,7 @@ class PauliBenchmark:
             self.__save_state__(i, stateString)
         p = str(self.dep)
         p = p.replace(".", "_")
-        p = "Nine_Qubit_Pauli_X_Benchmark_p" + p 
+        p = "Nine_Qubit_Pauli_X_Benchmark_p" + p + "Pauli_Gates" + str(pauli_gates) 
         print(p)
         self.export_to_file(p)
 
@@ -106,7 +106,7 @@ class PauliBenchmark:
             self.__save_state__(i, stateString)
         p = str(self.dep)
         p = p.replace(".", "_")
-        p = "Nine_Qubit_Pauli_Z_Benchmark_p" + p 
+        p = "Nine_Qubit_Pauli_Z_Benchmark_p" + p + "Pauli_Gates" + str(pauli_gates) 
         print(p)
         self.export_to_file(p)
                 

@@ -1092,10 +1092,12 @@ class Circuit:
         self.operations = []
         self.gates = []
 
-        self.instructions = []
-
         # Options / Flags
         self.save_instructions = save_instructions
+        self.instructions = []
+
+        # Keeps track of logical errors, only usable when running surface codes with recovery gates
+        self.logical_error_count = 0
 
         self.state_vector = StateVector(self.N)
         self.noisy_operations_state_prep = []
@@ -1871,11 +1873,23 @@ class Circuit:
                     self.__reset_execute__(instruction.targetQubit, instruction.readBit)
                 elif(isinstance(instruction, Recovery_Bit_Flip)):
                     targetQubit = instruction.getTargetQubit(self.classicalBitRegister)
-                    if(targetQubit is not None):
+                    if(targetQubit == -1):
+                        # No bit flips found, no recovery applied
+                        pass
+                    elif(targetQubit == -2):
+                        # Encountered logical error, unknown syndrome. No recovery applied
+                        self.logical_error_count = self.logical_error_count + 1
+                    else:
                         self.state_vector.apply_unitary_operation(CircuitUnitaryOperation.get_combined_operation_for_pauli_x(targetQubit, self.N))
                 elif(isinstance(instruction, Recovery_Phase_Flip)):
                     targetQubit = instruction.getTargetQubit(self.classicalBitRegister)
-                    if(targetQubit is not None):
+                    if(targetQubit == -1):
+                        # No phase flips found, no recovery applied
+                        pass
+                    elif(targetQubit == -2):
+                        # Encountered logical error, unknown syndrome. No recovery applied
+                        self.logical_error_count = self.logical_error_count + 1
+                    else:
                         self.state_vector.apply_unitary_operation(CircuitUnitaryOperation.get_combined_operation_for_pauli_z(targetQubit, self.N))
                 elif(isinstance(instruction, NoisyGateInstruction)):
                     self.__noisy_instruction_handler(instruction)
@@ -3254,10 +3268,10 @@ class Recovery_Phase_Flip():
         targetQubit = int(self.__get_recovery(syndrome))
         if(targetQubit == -2):
             print("Logical error when deciding phase flip recovery option")
-            return None
+            return targetQubit
         elif(targetQubit == -1):
             print("No phase flips detected, no recovery applied")
-            return None
+            return targetQubit
         else:
             print(f"Phase flip recovery (Pauli Z) applied on qubit: {targetQubit}")
         return targetQubit
@@ -3297,10 +3311,10 @@ class Recovery_Bit_Flip():
         targetQubit = int(self.__get_recovery(syndrome))
         if(targetQubit == -2):
             print("Logical error when deciding bit flip recovery option")
-            return None
+            return targetQubit
         elif(targetQubit == -1):
             print("No bit flips detected, no recovery applied")
-            return None
+            return targetQubit
         else:
             print(f"Bit flip recovery (Pauli X) applied on qubit: {targetQubit}")
         return targetQubit

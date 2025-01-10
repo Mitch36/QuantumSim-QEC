@@ -1,0 +1,4 @@
+Index;State;Amount_of_zeros;Amount_of_ones;Logical_error_count
+0;000000000;9;0;0
+1;000000000;9;0;0
+2;100000000;8;1;0
