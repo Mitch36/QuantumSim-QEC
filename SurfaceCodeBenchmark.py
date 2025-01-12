@@ -96,7 +96,7 @@ class NoisySurfaceCodeBenchmark:
             self.__save_state__(i, stateString)
         p = str(self.dep)
         p = p.replace(".", "_")
-        p = "Nine_Qubit_Pauli_Z_Benchmark_p" + p + "Pauli_Gates" + str(pauli_gates) 
+        p = "SurfaceCode_Pauli_Z_Benchmark_p" + p + "Pauli_Gates" + str(pauli_gates) 
         print(p)
         self.export_to_file(p)
                 
