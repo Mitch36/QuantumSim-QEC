@@ -1,9 +1,13 @@
 from quantumsim import Circuit
 
 class PauliBenchmark:
-    def __init__(self, depolarizing_error_probability: float):
-        self.dep = depolarizing_error_probability
+    def __init__(self):
         self.quantumStateLog = []
+
+        self.cr = Circuit(9, 9, True)
+        self.p = self.cr.parameters["p"][0]
+        self.T1 = self.cr.parameters["T1"][0]
+        self.T2 = self.cr.parameters["T2"][0]
 
     def __save_state__(self, id: int, stateString: str):
 
@@ -22,7 +26,7 @@ class PauliBenchmark:
             else:
                 raise Exception(f"Forbidden character in stateString: {stateString}")
             
-        logString = str(id) + ";" + stateString + ";" + str(amountOfZeros) + ";" + str(amountOfOnes) + "\n"
+        logString = str(id) + ";[" + stateString + "];" + str(amountOfZeros) + ";" + str(amountOfOnes) + ";" + str(self.p) + ";" + str(self.T1) + ";" + str(self.T2) + "\n"
         self.quantumStateLog.append(logString)
 
     def __add_measure_all_data_qubits__(self):
@@ -48,40 +52,38 @@ class PauliBenchmark:
         self.cr.hadamard(8)
 
     def __build_nine_qubit_pauli_x_benchmark_circuit__(self, pauli_X_Gates: int):
-        self.cr = Circuit(9, 9, True)
         for i in range(pauli_X_Gates):
-            self.cr.noisy_pauli_x(0, self.dep)
-            self.cr.noisy_pauli_x(1, self.dep)
-            self.cr.noisy_pauli_x(2, self.dep)
-            self.cr.noisy_pauli_x(3, self.dep)
-            self.cr.noisy_pauli_x(4, self.dep)
-            self.cr.noisy_pauli_x(5, self.dep)
-            self.cr.noisy_pauli_x(6, self.dep)
-            self.cr.noisy_pauli_x(7, self.dep)
-            self.cr.noisy_pauli_x(8, self.dep)
+            self.cr.noisy_pauli_x(0)
+            self.cr.noisy_pauli_x(1)
+            self.cr.noisy_pauli_x(2)
+            self.cr.noisy_pauli_x(3)
+            self.cr.noisy_pauli_x(4)
+            self.cr.noisy_pauli_x(5)
+            self.cr.noisy_pauli_x(6)
+            self.cr.noisy_pauli_x(7)
+            self.cr.noisy_pauli_x(8)
 
         self.__add_measure_all_data_qubits__()
 
     def __build_nine_qubit_pauli_z_benchmark_circuit__(self, pauli_Z_Gates: int):
-        self.cr = Circuit(9, 9, True)
         self.__add_hadamard_all_data_qubits__()
         for i in range(pauli_Z_Gates):
-            self.cr.noisy_pauli_z(0, self.dep)
-            self.cr.noisy_pauli_z(1, self.dep)
-            self.cr.noisy_pauli_z(2, self.dep)
-            self.cr.noisy_pauli_z(3, self.dep)
-            self.cr.noisy_pauli_z(4, self.dep)
-            self.cr.noisy_pauli_z(5, self.dep)
-            self.cr.noisy_pauli_z(6, self.dep)
-            self.cr.noisy_pauli_z(7, self.dep)
-            self.cr.noisy_pauli_z(8, self.dep)
+            self.cr.noisy_pauli_z(0)
+            self.cr.noisy_pauli_z(1)
+            self.cr.noisy_pauli_z(2)
+            self.cr.noisy_pauli_z(3)
+            self.cr.noisy_pauli_z(4)
+            self.cr.noisy_pauli_z(5)
+            self.cr.noisy_pauli_z(6)
+            self.cr.noisy_pauli_z(7)
+            self.cr.noisy_pauli_z(8)
 
         self.__add_hadamard_all_data_qubits__()
         self.__add_measure_all_data_qubits__()
         
     def export_to_file(self, fileName: str):
         with open(f"output/{fileName}.csv", "w") as file:
-            file.write("index;state;amountOfZeros;amountOfOnes\n")
+            file.write("index;state;amountOfZeros;amountOfOnes;p;T1;T2\n")
             for dataLog in self.quantumStateLog:
                 file.write(dataLog)
         file.close()
@@ -92,9 +94,7 @@ class PauliBenchmark:
             self.cr.execute()
             stateString = self.cr.classicalBitRegister.toString()
             self.__save_state__(i, stateString)
-        p = str(self.dep)
-        p = p.replace(".", "_")
-        p = "Nine_Qubit_Pauli_X_Benchmark_p" + p + "Pauli_Gates" + str(pauli_gates) 
+        p = "Nine_Qubit_Pauli_X_Benchmark_Pauli_Gates" + str(pauli_gates) 
         print(p)
         self.export_to_file(p)
 
@@ -104,9 +104,7 @@ class PauliBenchmark:
             self.cr.execute()
             stateString = self.cr.classicalBitRegister.toString()
             self.__save_state__(i, stateString)
-        p = str(self.dep)
-        p = p.replace(".", "_")
-        p = "Nine_Qubit_Pauli_Z_Benchmark_p" + p + "Pauli_Gates" + str(pauli_gates) 
+        p = "Nine_Qubit_Pauli_Z_Benchmark_Pauli_Gates" + str(pauli_gates) 
         print(p)
         self.export_to_file(p)
                 

@@ -1378,10 +1378,11 @@ class Circuit:
         self.instructions.append(CNOT(self.N, t_qubit, c_qubit))
         
         self.noisy_pauli_x(t_qubit, t_p, t_T1, t_T2)
-        self.noisy_pauli_x(t_qubit, t_p, t_T1, t_T2)
+        # self.noisy_pauli_x(t_qubit, t_p, t_T1, t_T2)
+        self.pauli_x(t_qubit)
         self.noisy_pauli_x(c_qubit, c_p, c_T1, c_T2)
-        self.noisy_pauli_x(c_qubit, c_p, c_T1, c_T2)
-
+        # self.noisy_pauli_x(c_qubit, c_p, c_T1, c_T2)
+        self.pauli_x(c_qubit)
 
         self.descriptions.append(f"Noisy CNOT with target qubit {t_qubit} and control qubit {c_qubit}")
         gate_as_string = '.'*self.N
