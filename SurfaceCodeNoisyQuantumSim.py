@@ -106,7 +106,7 @@ class C(): # Classical register naming aliases
     def D9() -> int:
         return 16
 
-class SurfaceCodePart:
+class SurfaceCodePart: # Used for debugging and toString() functionality
     def __init__(self, name: str, startIndexGate: int, totalGates: int):
         self.name = name
         self.startIndexGate = startIndexGate
@@ -124,7 +124,7 @@ class NoisySurfaceCode:
     # https://arxiv.org/pdf/2303.17211
     # http://arxiv.org/pdf/1612.08208
     
-    def __init__(self):
+    def __init__(self, noise_factor: float=1):
 
         # Simulating many qubits is expensive resource wise, the rotated surface 17 code is therefore simulated using only 10 qubits using QuantumSim.
         self.qubits = int(10)
@@ -133,7 +133,9 @@ class NoisySurfaceCode:
         # Memory optimization flag, when simulating many qubits (10 or more) this flag should always be set to TRUE
         self.save_instructions_flag = True
 
-        self.circuit = Circuit(self.qubits, self.bits, self.save_instructions_flag)
+        self.noise_factor = noise_factor
+
+        self.circuit = Circuit(self.qubits, self.bits, self.save_instructions_flag, noise_factor)
         self.circuit.classicalBitRegister.create_partition(0, 3, "AncX")
         self.circuit.classicalBitRegister.create_partition(4, 7, "AncZ")
         self.circuit.classicalBitRegister.create_partition(8, 16, "Data")

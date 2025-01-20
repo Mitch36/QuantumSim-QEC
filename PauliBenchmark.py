@@ -1,13 +1,17 @@
 from quantumsim import Circuit
 
 class PauliBenchmark:
-    def __init__(self):
+    def __init__(self, noise_factor: float = 1):
         self.quantumStateLog = []
+        self.noise_factor = noise_factor
 
-        self.cr = Circuit(9, 9, True)
-        self.p = self.cr.parameters["p"][0]
-        self.T1 = self.cr.parameters["T1"][0]
-        self.T2 = self.cr.parameters["T2"][0]
+        self.cr = Circuit(9, 9, True, noise_factor)
+        # A greater p value means more noise
+        self.p = self.cr.parameters["p"][0] * self.noise_factor
+        # A smaller T1 value means more noise
+        self.T1 = self.cr.parameters["T1"][0] / self.noise_factor
+        # A smaller T2 value means more noise
+        self.T2 = self.cr.parameters["T2"][0] / self.noise_factor
 
     def __save_state__(self, id: int, stateString: str):
 
@@ -94,7 +98,7 @@ class PauliBenchmark:
             self.cr.execute()
             stateString = self.cr.classicalBitRegister.toString()
             self.__save_state__(i, stateString)
-        p = "Nine_Qubit_Pauli_X_Benchmark_Pauli_Gates" + str(pauli_gates) 
+        p = "Nine_Qubit_Pauli_X_Benchmark_Pauli_Gates" + str(pauli_gates) + "Factor" + str(self.noise_factor)
         print(p)
         self.export_to_file(p)
 
@@ -104,7 +108,7 @@ class PauliBenchmark:
             self.cr.execute()
             stateString = self.cr.classicalBitRegister.toString()
             self.__save_state__(i, stateString)
-        p = "Nine_Qubit_Pauli_Z_Benchmark_Pauli_Gates" + str(pauli_gates) 
+        p = "Nine_Qubit_Pauli_Z_Benchmark_Pauli_Gates" + str(pauli_gates) + "Factor" + str(self.noise_factor)
         print(p)
         self.export_to_file(p)
                 

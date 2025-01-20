@@ -1,11 +1,12 @@
 from SurfaceCodeNoisyQuantumSim import NoisySurfaceCode
 
 class NoisySurfaceCodeBenchmark:
-    def __init__(self, stabilizer_rounds_interval: int):
+    def __init__(self, stabilizer_rounds_interval: int, noise_factor: float = 1):
         self.stabilizer_rounds_interval = stabilizer_rounds_interval
 
+        self.noise_factor = noise_factor
         self.quantumStateLog = []
-        self.sf = NoisySurfaceCode()
+        self.sf = NoisySurfaceCode(noise_factor)
         self.sf.circuit.classicalBitRegister.partitions.clear()
 
         self.p = self.sf.circuit.parameters["p"][0]
@@ -35,7 +36,7 @@ class NoisySurfaceCodeBenchmark:
             
         logString = str(id) + ";[" + dataString + "];" + str(amountOfZeros) + ";" + str(amountOfOnes) + ";" + str(self.sf.circuit.logical_error_count) + ";" + str(self.p) + ";" + str(self.T1) + ";" + str(self.T2) + "\n"
         self.sf.circuit.logical_error_count = 0
-        print(logString)
+        # print(logString)
         self.quantumStateLog.append(logString)
 
     def __build_nine_qubit_pauli_x_benchmark_circuit__(self, pauli_X_Gates: int):
@@ -85,7 +86,7 @@ class NoisySurfaceCodeBenchmark:
             self.sf.circuit.execute()
             stateString = self.sf.circuit.classicalBitRegister.toString()
             self.__save_state__(i, stateString)
-        data = "SurfaceCode_Pauli_X_Benchmark_Pauli_Gates" + str(pauli_gates) + "recovery_interval" + str(self.stabilizer_rounds_interval)
+        data = "SurfaceCode_Pauli_X_Benchmark_Pauli_Gates" + str(pauli_gates) + "Recovery_interval" + str(self.stabilizer_rounds_interval) + "Factor" + str(self.noise_factor)
         print(data)
         self.export_to_file(data)
 
@@ -95,7 +96,7 @@ class NoisySurfaceCodeBenchmark:
             self.sf.circuit.execute()
             stateString = self.sf.circuit.classicalBitRegister.toString()
             self.__save_state__(i, stateString)
-        data = "SurfaceCode_Pauli_Z_Benchmark_Pauli_Gates" + str(pauli_gates) + "recovery_interval" + str(self.stabilizer_rounds_interval)
+        data = "SurfaceCode_Pauli_Z_Benchmark_Pauli_Gates" + str(pauli_gates) + "Recovery_interval" + str(self.stabilizer_rounds_interval) + "Factor" + str(self.noise_factor)
         print(data)
         self.export_to_file(data)
                 

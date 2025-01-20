@@ -233,7 +233,7 @@ Attributes:
 Todo:
     * Add parametrized pulses based on Power Series or Fourier Series.
 """
-class Pulse(object): # TODO - Find out what the Pulse classes do
+class Pulse(object):
     """ Parent class for pulses with basic utility.
 
     Args:
@@ -299,7 +299,7 @@ class Pulse(object): # TODO - Find out what the Pulse classes do
         is_non_negative = all((pulse(x) >= 0) for x in np.linspace(0, 1, self.check_n_points))
         return integrates_to_1 and is_non_negative
 
-    def _parametrization_is_valid(self, parametrization: callable) -> bool: # TODO - Find out what this function does
+    def _parametrization_is_valid(self, parametrization: callable) -> bool:
         """ Returns whether the parametrization is monotone and has valid bounds.
 
         Args:
@@ -1082,9 +1082,10 @@ Class representing a quantum circuit of N qubits.
 """
 class Circuit:
     
-    def __init__(self, qubits: int, bits: int=0,  save_instructions: bool=False):
+    def __init__(self, qubits: int, bits: int=0,  save_instructions: bool=False, noise_factor: float = 1):
         self.N = qubits
         self.classicalBitRegister = ClassicalBitRegister(bits)
+        self.noise_factor = noise_factor
 
         self.state_vector = StateVector(self.N)
         self.quantum_states = [self.state_vector.get_quantum_state()]
@@ -1151,11 +1152,11 @@ class Circuit:
         """
         # If any noise parameter is None use the generated value
         if p is None:
-            p = self.parameters["p"][q]
+            p = self.parameters["p"][q] * self.noise_factor
         if T1 is None:
-            T1 = self.parameters["T1"][q]
+            T1 = self.parameters["T1"][q] / self.noise_factor
         if T2 is None:
-            T2 = self.parameters["T2"][q]
+            T2 = self.parameters["T2"][q] / self.noise_factor
 
         self.instructions.append(NoisyPauliX(q, self.N, p, T1, T2))
         self.descriptions.append(f"Noisy Pauli X on qubit {q}")
@@ -1187,11 +1188,11 @@ class Circuit:
 
         # If any noise parameter is None use the generated value
         if p is None:
-            p = self.parameters["p"][q]
+            p = self.parameters["p"][q] * self.noise_factor
         if T1 is None:
-            T1 = self.parameters["T1"][q]
+            T1 = self.parameters["T1"][q] / self.noise_factor
         if T2 is None:
-            T2 = self.parameters["T2"][q]
+            T2 = self.parameters["T2"][q] / self.noise_factor
 
         self.instructions.append(NoisyPauliY(q, self.N, p, T1, T2))
         self.descriptions.append(f"Noisy Pauli Y on qubit {q}")
@@ -1225,11 +1226,11 @@ class Circuit:
 
         # If any noise parameter is None use the generated value
         if p is None:
-            p = self.parameters["p"][q]
+            p = self.parameters["p"][q] * self.noise_factor
         if T1 is None:
-            T1 = self.parameters["T1"][q]
+            T1 = self.parameters["T1"][q] / self.noise_factor
         if T2 is None:
-            T2 = self.parameters["T2"][q]
+            T2 = self.parameters["T2"][q] / self.noise_factor
 
         self.instructions.append(NoisyPauliZ(q, self.N, p, T1, T2))
         self.descriptions.append(f"Noisy Pauli Z on qubit {q}")
@@ -1261,11 +1262,11 @@ class Circuit:
 
         # If any noise parameter is None use the generated value
         if p is None:
-            p = self.parameters["p"][q]
+            p = self.parameters["p"][q] * self.noise_factor
         if T1 is None:
-            T1 = self.parameters["T1"][q]
+            T1 = self.parameters["T1"][q] / self.noise_factor
         if T2 is None:
-            T2 = self.parameters["T2"][q]
+            T2 = self.parameters["T2"][q] / self.noise_factor
 
         self.instructions.append(NoisyHadamard(q, self.N, p, T1, T2))
         self.descriptions.append(f"Noisy Hadamard on qubit {q}")
@@ -1349,40 +1350,21 @@ class Circuit:
 
         # If any noise parameter is None use the generated value
         if c_p is None:
-            c_p = self.parameters["p"][c_qubit]
+            c_p = self.parameters["p"][c_qubit] * self.noise_factor
         if c_T1 is None:
-            c_T1 = self.parameters["T1"][c_qubit]
+            c_T1 = self.parameters["T1"][c_qubit] / self.noise_factor
         if c_T2 is None:
-            c_T2 = self.parameters["T2"][c_qubit]
+            c_T2 = self.parameters["T2"][c_qubit] / self.noise_factor
         if t_p is None:
-            t_p = self.parameters["p"][t_qubit]
+            t_p = self.parameters["p"][t_qubit] * self.noise_factor
         if t_T1 is None:
-            t_T1 = self.parameters["T1"][t_qubit]
+            t_T1 = self.parameters["T1"][t_qubit] / self.noise_factor
         if t_T2 is None:
-            t_T2 = self.parameters["T2"][t_qubit]
+            t_T2 = self.parameters["T2"][t_qubit] / self.noise_factor
         if gate_error is None:
-            gate_error = 0.0000000000001 # default was set to 1
+            gate_error = 0.1 # default was set to 1
 
-        # Original implementation
-        # self.instructions.append(NoisyCNOT(c_qubit, t_qubit, self.N, c_p, t_p, c_T1, t_T1, c_T2, t_T2, gate_error))
-
-        # Mimicked implementation by adding four pauli x gates to create additional noise 
-        # self.noisy_pauli_x(c_qubit, c_p, c_T1, c_T2)
-        # self.pauli_x(c_qubit)
-        # self.noisy_pauli_x(c_qubit, c_p, c_T1, c_T2)
-        # self.noisy_pauli_x(t_qubit, t_p, t_T1, t_T2)
-        # self.pauli_x(t_qubit)
-
-        
-
-        self.instructions.append(CNOT(self.N, t_qubit, c_qubit))
-        
-        self.noisy_pauli_x(t_qubit, t_p, t_T1, t_T2)
-        # self.noisy_pauli_x(t_qubit, t_p, t_T1, t_T2)
-        self.pauli_x(t_qubit)
-        self.noisy_pauli_x(c_qubit, c_p, c_T1, c_T2)
-        # self.noisy_pauli_x(c_qubit, c_p, c_T1, c_T2)
-        self.pauli_x(c_qubit)
+        self.instructions.append(NoisyCNOT(c_qubit, t_qubit, self.N, c_p, t_p, c_T1, t_T1, c_T2, t_T2, gate_error))
 
         self.descriptions.append(f"Noisy CNOT with target qubit {t_qubit} and control qubit {c_qubit}")
         gate_as_string = '.'*self.N
@@ -3275,8 +3257,8 @@ class Recovery_Phase_Flip():
             return targetQubit
         else:
             print(f"Phase flip recovery (Pauli Z) applied on qubit: {targetQubit}")
-        return targetQubit
-    
+            return targetQubit
+        return targetQubit    
 """
 Special operation, used for executing a recovery from a bit flip when using surface codes
 """
@@ -3318,17 +3300,8 @@ class Recovery_Bit_Flip():
             return targetQubit
         else:
             print(f"Bit flip recovery (Pauli X) applied on qubit: {targetQubit}")
-        return targetQubit
-
-
-#   _   _       _              _____       _         _____           _                   _   _                 
-#  | \ | |     (_)            / ____|     | |       |_   _|         | |                 | | (_)                
-#  |  \| | ___  _ ___ _   _  | |  __  __ _| |_ ___    | |  _ __  ___| |_ _ __ _   _  ___| |_ _  ___  _ __  ___ 
-#  | . ` |/ _ \| / __| | | | | | |_ |/ _` | __/ _ \   | | | '_ \/ __| __| '__| | | |/ __| __| |/ _ \| '_ \/ __|
-#  | |\  | (_) | \__ \ |_| | | |__| | (_| | ||  __/  _| |_| | | \__ \ |_| |  | |_| | (__| |_| | (_) | | | \__ \
-#  |_| \_|\___/|_|___/\__, |  \_____|\__,_|\__\___| |_____|_| |_|___/\__|_|   \__,_|\___|\__|_|\___/|_| |_|___/
-#                      __/ |                                                                                   
-#                     |___/                                                                                    
+            return targetQubit
+        return targetQubit                                                                                  
 
 class NoisyGateInstruction(ABC):
     @abstractmethod
