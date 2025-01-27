@@ -1869,14 +1869,6 @@ class NoisyCircuit(Circuit):
         gate_as_list[t_qubit] = 'E'
         gate_as_string = ''.join(gate_as_list)
         self.gates.append(gate_as_string)
-        
-
-# Create the integrator for the noisy gates to use
-integrator = Integrator(constant_pulse)
-
-    
-
-
 
 """
 Circuit creation for quantum Fourier transform (QFT) and inverse quantum Fourier transform (iQFT).
